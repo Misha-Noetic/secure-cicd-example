@@ -6,6 +6,11 @@ on:
   pull_request:
     branches: [main]
 
+# Cancel in-progress runs when a new push arrives on the same branch
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 permissions:
   contents: read
   security-events: write  # Required to upload SARIF results to GitHub Security tab
@@ -26,10 +31,19 @@ jobs:
         with:
           fetch-depth: 0  # Full history so TruffleHog can scan all commits
 
-      - name: TruffleHog scan
+      # Full scan on pushes to main (catches anything in history)
+      - name: TruffleHog full scan
+        if: github.event_name == 'push'
         uses: trufflesecurity/trufflehog@main
         with:
           extra_args: --results=verified,unverified
+
+      # Incremental scan on PRs (only new commits — much faster on large repos)
+      - name: TruffleHog PR scan (new commits only)
+        if: github.event_name == 'pull_request'
+        uses: trufflesecurity/trufflehog@main
+        with:
+          extra_args: --results=verified,unverified --since-commit=${{ github.event.pull_request.base.sha }}
 
   # ─────────────────────────────────────────────
   # Job 2: Trivy — Filesystem / Dependency Scan
@@ -46,6 +60,14 @@ jobs:
 
       - name: Install Rust toolchain
         uses: dtolnay/rust-toolchain@stable
+
+      - name: Cache cargo registry
+        uses: actions/cache@v4
+        with:
+          path: ~/.cargo/registry
+          key: ${{ runner.os }}-cargo-registry-${{ hashFiles('**/Cargo.toml') }}
+          restore-keys: |
+            ${{ runner.os }}-cargo-registry-
 
       - name: Generate Cargo.lock
         run: cargo generate-lockfile
@@ -72,9 +94,10 @@ jobs:
           format: table
           exit-code: 0
 
+      # SARIF steps — only run on public repos (requires GitHub Advanced Security on private)
       - name: Generate SARIF for GitHub Security tab
         uses: aquasecurity/trivy-action@master
-        if: always()
+        if: always() && github.repository_visibility == 'public'
         with:
           scan-type: fs
           scan-ref: .
@@ -84,7 +107,7 @@ jobs:
 
       - name: Upload Trivy FS results to GitHub Security tab
         uses: github/codeql-action/upload-sarif@v3
-        if: always() && hashFiles('trivy-fs-results.sarif') != ''
+        if: always() && github.repository_visibility == 'public' && hashFiles('trivy-fs-results.sarif') != ''
         with:
           sarif_file: trivy-fs-results.sarif
           category: trivy-filesystem
@@ -97,6 +120,8 @@ jobs:
   trivy-image:
     name: Trivy Docker Image Scan
     runs-on: ubuntu-latest
+    # Only build + scan the Docker image on merges to main (saves ~15 min on PRs)
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
 
     steps:
       - name: Checkout code
@@ -125,9 +150,10 @@ jobs:
           format: table
           exit-code: 0
 
+      # SARIF steps — only run on public repos (requires GitHub Advanced Security on private)
       - name: Generate SARIF for GitHub Security tab
         uses: aquasecurity/trivy-action@master
-        if: success()
+        if: success() && github.repository_visibility == 'public'
         with:
           image-ref: secure-api:${{ github.sha }}
           severity: CRITICAL,HIGH
@@ -136,7 +162,7 @@ jobs:
 
       - name: Upload Trivy image results to GitHub Security tab
         uses: github/codeql-action/upload-sarif@v3
-        if: always() && hashFiles('trivy-image-results.sarif') != ''
+        if: always() && github.repository_visibility == 'public' && hashFiles('trivy-image-results.sarif') != ''
         with:
           sarif_file: trivy-image-results.sarif
           category: trivy-docker-image
