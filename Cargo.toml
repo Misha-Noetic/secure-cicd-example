@@ -1,0 +1,11 @@
+[package]
+name = "secure-api"
+version = "0.1.0"
+edition = "2021"
+description = "Example Rust API with CI/CD security scanning"
+
+[dependencies]
+actix-web = "4"
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+tokio = { version = "1", features = ["full"] }

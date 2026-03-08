@@ -1,0 +1,111 @@
+name: Security Scanning
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+  security-events: write  # Required to upload SARIF results to GitHub Security tab
+
+jobs:
+  # ─────────────────────────────────────────────
+  # Job 1: TruffleHog — Secret Detection
+  # Scans git history and code for leaked secrets
+  # (API keys, passwords, tokens, private keys)
+  # ─────────────────────────────────────────────
+  trufflehog:
+    name: TruffleHog Secret Scan
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # Full history so TruffleHog can scan all commits
+
+      - name: TruffleHog scan
+        uses: trufflesecurity/trufflehog@main
+        with:
+          extra_args: --results=verified,unverified
+
+  # ─────────────────────────────────────────────
+  # Job 2: Trivy — Filesystem / Dependency Scan
+  # Scans Cargo.toml/Cargo.lock for known CVEs
+  # in Rust crate dependencies
+  # ─────────────────────────────────────────────
+  trivy-fs:
+    name: Trivy Filesystem Scan
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Run Trivy filesystem scan
+        uses: aquasecurity/trivy-action@master
+        with:
+          scan-type: fs
+          scan-ref: .
+          severity: CRITICAL,HIGH,MEDIUM
+          format: table
+          exit-code: 1  # Fail the pipeline on findings
+
+      - name: Run Trivy filesystem scan (SARIF for GitHub Security tab)
+        uses: aquasecurity/trivy-action@master
+        if: always()  # Run even if the previous step failed
+        with:
+          scan-type: fs
+          scan-ref: .
+          severity: CRITICAL,HIGH,MEDIUM
+          format: sarif
+          output: trivy-fs-results.sarif
+
+      - name: Upload Trivy FS results to GitHub Security tab
+        uses: github/codeql-action/upload-sarif@v3
+        if: always()
+        with:
+          sarif_file: trivy-fs-results.sarif
+          category: trivy-filesystem
+
+  # ─────────────────────────────────────────────
+  # Job 3: Trivy — Docker Image Scan
+  # Builds the container image, then scans it for
+  # OS-level and application-level vulnerabilities
+  # ─────────────────────────────────────────────
+  trivy-image:
+    name: Trivy Docker Image Scan
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Build Docker image
+        run: docker build -t secure-api:${{ github.sha }} .
+
+      - name: Run Trivy image scan
+        uses: aquasecurity/trivy-action@master
+        with:
+          image-ref: secure-api:${{ github.sha }}
+          severity: CRITICAL,HIGH
+          format: table
+          exit-code: 1  # Fail the pipeline on CRITICAL/HIGH
+
+      - name: Run Trivy image scan (SARIF for GitHub Security tab)
+        uses: aquasecurity/trivy-action@master
+        if: always()
+        with:
+          image-ref: secure-api:${{ github.sha }}
+          severity: CRITICAL,HIGH
+          format: sarif
+          output: trivy-image-results.sarif
+
+      - name: Upload Trivy image results to GitHub Security tab
+        uses: github/codeql-action/upload-sarif@v3
+        if: always()
+        with:
+          sarif_file: trivy-image-results.sarif
+          category: trivy-docker-image
