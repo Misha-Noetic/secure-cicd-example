@@ -15,6 +15,8 @@ impl Config {
             private_key: "removed",
             // Another hardcoded secret to test custom TruffleHog detector
             staging_db: "mysql://deploy:P@ssw0rd2026!@db.staging.internal:3306/appdb".to_string(),
+            // New test: should trigger TruffleHog custom detector + Slack alert
+            reporting_db: "postgres://reports:Rep0rt$2026@warehouse.noetic.net:5432/analytics".to_string(),
         }
     }
 }

@@ -121,15 +121,24 @@ jobs:
   trivy-image:
     name: Trivy Docker Image Scan
     runs-on: ubuntu-latest
-    # Only build + scan the Docker image on merges to main (saves ~15 min on PRs)
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    # Only build + scan the Docker image on pushes to main and scheduled runs (skip PRs)
+    if: (github.event_name == 'push' || github.event_name == 'schedule') && github.ref == 'refs/heads/main'
 
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Build Docker image
-        run: docker build -t secure-api:${{ github.sha }} .
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build Docker image (with layer cache)
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          load: true
+          tags: secure-api:${{ github.sha }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
 
       # GATE: Block on fixable CRITICAL/HIGH vulnerabilities
       - name: "GATE: Fixable CRITICAL/HIGH vulnerabilities"
