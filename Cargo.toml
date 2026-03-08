@@ -12,4 +12,4 @@ tokio = { version = "1", features = ["full"] }
 
 # INTENTIONALLY VULNERABLE — pinned to old version for demo purposes
 # regex 1.5.4 has CVE-2022-24713 (ReDoS), fixed in 1.5.5+
-regex = "=1.5.4"
+regex = "1.5.5"
