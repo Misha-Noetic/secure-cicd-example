@@ -5,6 +5,8 @@ on:
     branches: [main]
   pull_request:
     branches: [main]
+  schedule:
+    - cron: '0 7 * * *'  # Every day at 7 AM UTC
 
 # Cancel in-progress runs when a new push arrives on the same branch
 concurrency:
