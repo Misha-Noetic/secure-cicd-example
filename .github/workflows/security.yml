@@ -31,16 +31,15 @@ jobs:
         with:
           fetch-depth: 0  # Full history so TruffleHog can scan all commits
 
-      # Full scan on pushes to main (catches anything in history)
-      - name: TruffleHog full scan
-        if: github.event_name == 'push'
+      # Step 1: Built-in detectors (800+ patterns for known services)
+      - name: TruffleHog — built-in detectors
         uses: trufflesecurity/trufflehog@main
         with:
-          extra_args: --no-verification --config=.trufflehog.yml
+          extra_args: --no-verification
 
-      # Incremental scan on PRs (only new commits — much faster on large repos)
-      - name: TruffleHog PR scan (new commits only)
-        if: github.event_name == 'pull_request'
+      # Step 2: Custom detectors (org-specific patterns from .trufflehog.yml)
+      # Runs separately because --config may disable built-in detectors
+      - name: TruffleHog — custom org detectors
         uses: trufflesecurity/trufflehog@main
         with:
           extra_args: --no-verification --config=.trufflehog.yml
