@@ -10,13 +10,15 @@ pub struct Config {
 impl Config {
     pub fn load() -> Self {
         Config {
-            database_url: "postgres://admin:SuperSecret123!@db.production.internal:5432/myapp".to_string(),
+            database_url: "removed",
 
             private_key: "removed",
             // Another hardcoded secret to test custom TruffleHog detector
-            staging_db: "mysql://deploy:P@ssw0rd2026!@db.staging.internal:3306/appdb".to_string(),
+            staging_db: "removed",
             // New test: should trigger TruffleHog custom detector + Slack alert
-            reporting_db: "postgres://reports:Rep0rt$2026@warehouse.noetic.net:5432/analytics".to_string(),
+            reporting_db: "removed",
+            // Junior dev copy-pasted from prod wiki
+            cache_url: "removed",
         }
     }
 }
