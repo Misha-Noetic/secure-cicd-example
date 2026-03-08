@@ -195,7 +195,11 @@ jobs:
   notify-slack:
     name: Slack Security Alert
     runs-on: ubuntu-latest
-    if: always() && (needs.trufflehog.result == 'failure' || needs.trivy-fs.result == 'failure' || needs.trivy-image.result == 'failure')
+    # Only run when: (a) a scan failed, AND (b) the webhook secret is configured
+    if: >-
+      always()
+      && secrets.SLACK_SECURITY_WEBHOOK_URL != ''
+      && (needs.trufflehog.result == 'failure' || needs.trivy-fs.result == 'failure' || needs.trivy-image.result == 'failure')
     needs: [trufflehog, trivy-fs, trivy-image]
 
     steps:
@@ -203,7 +207,6 @@ jobs:
         uses: slackapi/slack-github-action@v2.0.0
         with:
           webhook: ${{ secrets.SLACK_SECURITY_WEBHOOK_URL }}
-          webhook-type: incoming-webhook
           payload: |
             {
               "text": "🚨 Security scan failed in *${{ github.repository }}*",
