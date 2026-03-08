@@ -1,0 +1,54 @@
+# TruffleHog Custom Detector Configuration
+# Docs: https://trufflesecurity.com/blog/trufflehog-custom-detectors
+#
+# Use this to detect org-specific secrets that TruffleHog's 800+ built-in
+# detectors don't cover. Each detector has:
+#   - name: what shows up in the alert
+#   - keywords: fast pre-filter (TruffleHog skips files without these)
+#   - regex: the actual pattern to match
+#   - verify: (optional) HTTP endpoint to check if the secret is live
+
+detectors:
+
+  # ─── Example 1: Internal API keys with a company prefix ───
+  # If your org issues API keys like "noetic_live_abc123...", define it here.
+  - name: Noetic Internal API Key
+    keywords:
+      - noetic_live
+      - noetic_test
+    regex:
+      adjective: noetic_(live|test)_[a-zA-Z0-9]{32,}
+
+    # Optional: verify the key is actually valid by calling your API
+    # verify:
+    #   - endpoint: https://api.noetic.net/v1/auth/verify
+    #     unsafe: true   # allows non-HTTPS for internal endpoints
+    #     headers:
+    #       - "Authorization: Bearer {adjective}"
+
+  # ─── Example 2: Internal database connection strings ───
+  # Catches hardcoded postgres/mysql URLs pointing to your internal domains.
+  - name: Internal Database URL
+    keywords:
+      - production.internal
+      - staging.internal
+      - .noetic.net
+    regex:
+      adjective: (postgres|mysql|mongodb)://[^:]+:[^@]+@[^\s]*\.(production\.internal|staging\.internal|noetic\.net)[^\s'"]*
+
+  # ─── Example 3: JWT signing secrets ───
+  # If your org uses a specific prefix for JWT secrets.
+  - name: JWT Signing Secret
+    keywords:
+      - JWT_SECRET
+      - jwt_signing_key
+    regex:
+      adjective: (JWT_SECRET|jwt_signing_key)\s*[:=]\s*['"]?[A-Za-z0-9+/=]{32,}['"]?
+
+  # ─── Example 4: Slack webhook URLs ───
+  # Slack webhooks allow posting to channels — should never be in code.
+  - name: Slack Webhook URL
+    keywords:
+      - hooks.slack.com
+    regex:
+      adjective: https://hooks\.slack\.com/services/T[A-Z0-9]{8,}/B[A-Z0-9]{8,}/[A-Za-z0-9]{24,}
