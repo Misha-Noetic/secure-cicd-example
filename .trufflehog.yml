@@ -34,7 +34,7 @@ detectors:
       - staging.internal
       - .noetic.net
     regex:
-      adjective: (postgres|mysql|mongodb)://[^:]+:[^@]+@[^\s]*\.(production\.internal|staging\.internal|noetic\.net)[^\s'"]*
+      adjective: '((?:postgres|mysql|mongodb)://[^:]+:[^@]+@[^\s]*\.(?:production\.internal|staging\.internal|noetic\.net)[^\s''"]*)'
 
   # ─── Example 3: JWT signing secrets ───
   # If your org uses a specific prefix for JWT secrets.
