@@ -11,5 +11,5 @@ serde_json = "1"
 tokio = { version = "1", features = ["full"] }
 
 # INTENTIONALLY VULNERABLE — pinned to old version for demo purposes
-# h2 0.3.17 has CVE-2024-2653 (HTTP/2 CONTINUATION flood), fixed in 0.3.26+
-h2 = "=0.3.17"
+# regex 1.5.4 has CVE-2022-24713 (ReDoS), fixed in 1.5.5+
+regex = "=1.5.4"
