@@ -1,0 +1,8 @@
+# Trivy ignore list — https://trivy.dev/docs/configuration/filtering/#by-finding-ids
+#
+# Format:  CVE-ID  exp:YYYY-MM-DD  # reason
+#   - exp: = auto-expires the ignore on that date (forces you to re-evaluate)
+#   - Trivy picks this file up automatically, no workflow changes needed
+
+CVE-2026-0861   exp:2026-09-08  # glibc memalign overflow, no Debian fix yet
+CVE-2023-45853  exp:2026-09-08  # zlib minizip overflow, Debian will_not_fix
