@@ -43,7 +43,7 @@ jobs:
         if: github.event_name == 'pull_request'
         uses: trufflesecurity/trufflehog@main
         with:
-          extra_args: --no-verification --config=.trufflehog.yml --since-commit=${{ github.event.pull_request.base.sha }}
+          extra_args: --no-verification --config=.trufflehog.yml
 
   # ─────────────────────────────────────────────
   # Job 2: Trivy — Filesystem / Dependency Scan
