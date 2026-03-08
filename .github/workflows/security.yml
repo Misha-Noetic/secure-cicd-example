@@ -36,14 +36,14 @@ jobs:
         if: github.event_name == 'push'
         uses: trufflesecurity/trufflehog@main
         with:
-          extra_args: --results=verified,unverified --config=.trufflehog.yml
+          extra_args: --results=verified,unverified --fail
 
       # Incremental scan on PRs (only new commits — much faster on large repos)
       - name: TruffleHog PR scan (new commits only)
         if: github.event_name == 'pull_request'
         uses: trufflesecurity/trufflehog@main
         with:
-          extra_args: --results=verified,unverified --config=.trufflehog.yml --since-commit=${{ github.event.pull_request.base.sha }}
+          extra_args: --results=verified,unverified --fail --since-commit=${{ github.event.pull_request.base.sha }}
 
   # ─────────────────────────────────────────────
   # Job 2: Trivy — Filesystem / Dependency Scan
