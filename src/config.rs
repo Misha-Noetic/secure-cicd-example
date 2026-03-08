@@ -13,6 +13,8 @@ impl Config {
             database_url: "postgres://admin:SuperSecret123!@db.production.internal:5432/myapp".to_string(),
 
             private_key: "removed",
+            // Another hardcoded secret to test custom TruffleHog detector
+            staging_db: "mysql://deploy:P@ssw0rd2026!@db.staging.internal:3306/appdb".to_string(),
         }
     }
 }
