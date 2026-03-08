@@ -1,0 +1,25 @@
+# Pre-commit hooks — run security checks BEFORE code is committed
+# Install: pip install pre-commit && pre-commit install
+# Docs: https://pre-commit.com
+
+repos:
+  # TruffleHog — scan for secrets before they enter git history
+  - repo: https://github.com/trufflesecurity/trufflehog
+    rev: main
+    hooks:
+      - id: trufflehog
+        name: TruffleHog Secret Scan
+        entry: trufflehog git file://. --since-commit HEAD --no-verification --fail
+        language: golang
+        pass_filenames: false
+
+  # Basic file checks
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v4.5.0
+    hooks:
+      - id: check-added-large-files   # Prevent accidental large file commits
+        args: ['--maxkb=1000']
+      - id: detect-private-key         # Catch private keys (simple pattern match)
+      - id: check-merge-conflict       # Don't commit merge conflict markers
+      - id: trailing-whitespace        # Clean up whitespace
+      - id: end-of-file-fixer          # Ensure files end with newline

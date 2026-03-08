@@ -1,0 +1,38 @@
+# Dependabot — automatically opens PRs when dependencies have updates
+# Docs: https://docs.github.com/en/code-security/dependabot
+
+version: 2
+
+updates:
+  # Rust crate dependencies (Cargo.toml)
+  - package-ecosystem: cargo
+    directory: /
+    schedule:
+      interval: weekly          # Check every Monday
+    open-pull-requests-limit: 5 # Don't flood with PRs
+    labels:
+      - dependencies
+      - security
+    commit-message:
+      prefix: "deps:"           # e.g. "deps: bump serde from 1.0.1 to 1.0.2"
+
+  # GitHub Actions versions (workflow files)
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+    labels:
+      - ci
+    commit-message:
+      prefix: "ci:"
+
+  # Docker base image updates
+  - package-ecosystem: docker
+    directory: /
+    schedule:
+      interval: weekly
+    labels:
+      - docker
+      - security
+    commit-message:
+      prefix: "docker:"

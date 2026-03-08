@@ -166,3 +166,81 @@ jobs:
         with:
           sarif_file: trivy-image-results.sarif
           category: trivy-docker-image
+
+      # Generate SBOM — full inventory of everything in the image
+      - name: Generate SBOM (SPDX format)
+        uses: aquasecurity/trivy-action@master
+        if: always()
+        with:
+          image-ref: secure-api:${{ github.sha }}
+          format: spdx-json
+          output: sbom.spdx.json
+
+      - name: Upload SBOM as build artifact
+        uses: actions/upload-artifact@v4
+        if: always() && hashFiles('sbom.spdx.json') != ''
+        with:
+          name: sbom-${{ github.sha }}
+          path: sbom.spdx.json
+          retention-days: 90
+
+  # ─────────────────────────────────────────────
+  # Job 4: Notify — Slack alert on security failures
+  # Runs ONLY when a scan job fails (secret found, fixable CVE, etc.)
+  # Set up:
+  #   1. Create a Slack Incoming Webhook: https://api.slack.com/messaging/webhooks
+  #   2. Add it as a GitHub repo secret named SLACK_SECURITY_WEBHOOK_URL
+  #   3. That's it — this job handles the rest
+  # ─────────────────────────────────────────────
+  notify-slack:
+    name: Slack Security Alert
+    runs-on: ubuntu-latest
+    if: always() && (needs.trufflehog.result == 'failure' || needs.trivy-fs.result == 'failure' || needs.trivy-image.result == 'failure')
+    needs: [trufflehog, trivy-fs, trivy-image]
+
+    steps:
+      - name: Send Slack notification
+        uses: slackapi/slack-github-action@v2.0.0
+        with:
+          webhook: ${{ secrets.SLACK_SECURITY_WEBHOOK_URL }}
+          webhook-type: incoming-webhook
+          payload: |
+            {
+              "text": "🚨 Security scan failed in *${{ github.repository }}*",
+              "blocks": [
+                {
+                  "type": "header",
+                  "text": {
+                    "type": "plain_text",
+                    "text": "🚨 Security Scan Failed"
+                  }
+                },
+                {
+                  "type": "section",
+                  "fields": [
+                    { "type": "mrkdwn", "text": "*Repository:*\n${{ github.repository }}" },
+                    { "type": "mrkdwn", "text": "*Branch:*\n${{ github.ref_name }}" },
+                    { "type": "mrkdwn", "text": "*Triggered by:*\n${{ github.actor }}" },
+                    { "type": "mrkdwn", "text": "*Event:*\n${{ github.event_name }}" }
+                  ]
+                },
+                {
+                  "type": "section",
+                  "fields": [
+                    { "type": "mrkdwn", "text": "*TruffleHog:*\n${{ needs.trufflehog.result == 'failure' && '❌ Secrets found!' || '✅ Clean' }}" },
+                    { "type": "mrkdwn", "text": "*Trivy FS:*\n${{ needs.trivy-fs.result == 'failure' && '❌ Fixable CVEs!' || '✅ Clean' }}" },
+                    { "type": "mrkdwn", "text": "*Trivy Image:*\n${{ needs.trivy-image.result == 'failure' && '❌ Fixable CVEs!' || needs.trivy-image.result == 'skipped' && '⏭️ Skipped (PR)' || '✅ Clean' }}" }
+                  ]
+                },
+                {
+                  "type": "actions",
+                  "elements": [
+                    {
+                      "type": "button",
+                      "text": { "type": "plain_text", "text": "View Workflow Run" },
+                      "url": "${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+                    }
+                  ]
+                }
+              ]
+            }
