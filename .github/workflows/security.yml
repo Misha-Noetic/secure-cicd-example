@@ -211,6 +211,7 @@ jobs:
           SLACK_WEBHOOK: ${{ secrets.SLACK_SECURITY_WEBHOOK_URL }}
         with:
           webhook: ${{ secrets.SLACK_SECURITY_WEBHOOK_URL }}
+          webhook-type: incoming-webhook
           payload: |
             {
               "text": "🚨 Security scan failed in *${{ github.repository }}*",
