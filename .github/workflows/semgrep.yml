@@ -1,0 +1,54 @@
+name: Semgrep SAST
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  schedule:
+    - cron: '0 6 * * 1'  # Every Monday at 6 AM UTC
+
+# Cancel in-progress runs when a new push arrives on the same branch
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+  security-events: write  # Required for SARIF upload
+
+jobs:
+  semgrep:
+    name: Semgrep Scan
+    runs-on: ubuntu-latest
+    container:
+      image: semgrep/semgrep
+
+    # Skip Dependabot PRs (avoids permission issues)
+    if: github.actor != 'dependabot[bot]'
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      # When SEMGREP_APP_TOKEN is set → uses platform rules + Assistant AI triage
+      # When not set → falls back to default rulesets including Rust
+      - name: Run Semgrep
+        run: |
+          if [ -n "$SEMGREP_APP_TOKEN" ]; then
+            echo "Running with Semgrep AppSec Platform (Assistant enabled)"
+            semgrep ci
+          else
+            echo "Running standalone (no platform token — using default + Rust rulesets)"
+            semgrep ci --config auto --config p/rust --sarif -o semgrep-results.sarif || true
+          fi
+        env:
+          SEMGREP_APP_TOKEN: ${{ secrets.SEMGREP_APP_TOKEN }}
+
+      # Upload SARIF to GitHub Security tab (standalone mode only — platform handles this automatically)
+      - name: Upload SARIF to GitHub Security tab
+        if: always() && hashFiles('semgrep-results.sarif') != ''
+        uses: github/codeql-action/upload-sarif@v3
+        with:
+          sarif_file: semgrep-results.sarif
+          category: semgrep
