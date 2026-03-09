@@ -43,13 +43,8 @@ jobs:
           # CodeQL extracts the code structure directly from source files
           build-mode: none
 
-          # Uncomment to use a custom query pack for deeper analysis:
-          # queries: +security-and-quality
-          #
-          # Options:
-          #   security-extended — more security queries (may have more false positives)
-          #   security-and-quality — security + code quality queries
-          #   default — balanced security queries (recommended starting point)
+          # security-extended — more security queries beyond the default set
+          queries: +security-extended
 
       # Run CodeQL analysis and upload results
       - name: Perform CodeQL Analysis

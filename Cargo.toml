@@ -9,6 +9,11 @@ actix-web = "4"
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
 tokio = { version = "1", features = ["full"] }
+reqwest = { version = "0.12", features = ["json"] }
+rusqlite = { version = "0.31", features = ["bundled"] }
+md-5 = "0.10"
+log = "0.4"
+env_logger = "0.11"
 
 # INTENTIONALLY VULNERABLE — pinned to old version for demo purposes
 # regex 1.5.4 has CVE-2022-24713 (ReDoS), fixed in 1.5.5+

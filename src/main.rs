@@ -1,6 +1,9 @@
 use actix_web::{get, post, web, App, HttpResponse, HttpServer, Responder};
 use serde::{Deserialize, Serialize};
 
+mod config;
+mod vulnerable;
+
 #[derive(Serialize, Deserialize)]
 struct HealthResponse {
     status: String,
@@ -60,11 +63,23 @@ async fn create_item(item: web::Json<CreateItem>) -> impl Responder {
 async fn main() -> std::io::Result<()> {
     println!("Starting server on http://127.0.0.1:8080");
 
+    env_logger::init();
+
     HttpServer::new(|| {
         App::new()
             .service(health_check)
             .service(list_items)
             .service(create_item)
+            // Intentionally vulnerable endpoints for CodeQL demo
+            .service(vulnerable::search_items)
+            .service(vulnerable::greet_user)
+            .service(vulnerable::read_file)
+            .service(vulnerable::fetch_url)
+            .service(vulnerable::logged_search)
+            .service(vulnerable::login)
+            .service(vulnerable::hash_password)
+            .service(vulnerable::regex_search)
+            .service(vulnerable::send_report)
     })
     .bind("127.0.0.1:8080")?
     .run()
