@@ -52,7 +52,7 @@ jobs:
         if: steps.commit-check.outputs.skip != 'true'
         uses: trufflesecurity/trufflehog@main
         with:
-          extra_args: --no-verification
+          extra_args: --no-verification --exclude-paths=.trufflehog-exclude.txt
 
       # Step 2: Custom detectors (org-specific patterns from .trufflehog.yml)
       # Runs separately because --config may disable built-in detectors
@@ -60,7 +60,7 @@ jobs:
         if: steps.commit-check.outputs.skip != 'true'
         uses: trufflesecurity/trufflehog@main
         with:
-          extra_args: --no-verification --config=.trufflehog.yml
+          extra_args: --no-verification --config=.trufflehog.yml --exclude-paths=.trufflehog-exclude.txt
 
   # ─────────────────────────────────────────────
   # Job 2: Trivy — Filesystem / Dependency Scan

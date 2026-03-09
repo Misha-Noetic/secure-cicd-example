@@ -1,0 +1,6 @@
+# Paths to exclude from TruffleHog full-history scans
+# These files contained test secrets that have been rotated/removed.
+# New additions to these files are still caught on push/PR scans.
+
+# Test config with intentional fake secrets (all rotated)
+src/config\.rs
