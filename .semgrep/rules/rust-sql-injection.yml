@@ -1,0 +1,145 @@
+rules:
+  # Catches format!() result flowing into rusqlite prepare/execute
+  # Uses pure pattern matching (not taint) to sidestep Semgrep issue #10757
+  - id: rust-sql-injection-format-prepare
+    languages: [rust]
+    severity: ERROR
+    message: >
+      SQL query constructed via format!() is passed to db.prepare(). Use
+      parameterized queries with '?' placeholders instead to prevent SQL
+      injection. Example: db.prepare("SELECT * FROM t WHERE id = ?")?.query_row([&id], ...)
+    metadata:
+      confidence: HIGH
+      category: security
+      cwe:
+        - "CWE-89: Improper Neutralization of Special Elements used in an SQL Command ('SQL Injection')"
+      owasp:
+        - "A03:2021 - Injection"
+      technology:
+        - rust
+        - rusqlite
+      likelihood: HIGH
+      impact: HIGH
+      subcategory:
+        - vuln
+      references:
+        - https://owasp.org/Top10/A03_2021-Injection/
+    patterns:
+      - pattern-either:
+          - pattern: |
+              let $SQL = format!(...);
+              ...
+              $DB.prepare(&$SQL)
+          - pattern: |
+              let $SQL = format!(...);
+              ...
+              $DB.prepare($SQL)
+
+  - id: rust-sql-injection-format-execute
+    languages: [rust]
+    severity: ERROR
+    message: >
+      SQL query constructed via format!() is passed to db.execute(). Use
+      parameterized queries with '?' placeholders instead.
+    metadata:
+      confidence: HIGH
+      category: security
+      cwe:
+        - "CWE-89: Improper Neutralization of Special Elements used in an SQL Command ('SQL Injection')"
+      owasp:
+        - "A03:2021 - Injection"
+      technology:
+        - rust
+        - rusqlite
+      likelihood: HIGH
+      impact: HIGH
+      subcategory:
+        - vuln
+    patterns:
+      - pattern-either:
+          - pattern: |
+              let $SQL = format!(...);
+              ...
+              $DB.execute(&$SQL, ...)
+          - pattern: |
+              let $SQL = format!(...);
+              ...
+              $DB.execute($SQL, ...)
+
+  - id: rust-sql-injection-inline-prepare
+    languages: [rust]
+    severity: ERROR
+    message: >
+      SQL query constructed via format!() is passed directly to prepare().
+      Use parameterized queries instead.
+    metadata:
+      confidence: HIGH
+      category: security
+      cwe:
+        - "CWE-89: Improper Neutralization of Special Elements used in an SQL Command ('SQL Injection')"
+      owasp:
+        - "A03:2021 - Injection"
+      technology:
+        - rust
+        - rusqlite
+      likelihood: HIGH
+      impact: HIGH
+      subcategory:
+        - vuln
+    patterns:
+      - pattern-either:
+          - pattern: $DB.prepare(&format!(...))
+          - pattern: $DB.execute(&format!(...), ...)
+          - pattern: $DB.execute_batch(&format!(...))
+
+  # Diesel ORM
+  - id: rust-sql-injection-diesel
+    languages: [rust]
+    severity: ERROR
+    message: >
+      SQL query constructed via format!() passed to diesel::sql_query().
+      Use Diesel's query builder or parameterized queries instead.
+    metadata:
+      confidence: HIGH
+      category: security
+      cwe:
+        - "CWE-89: Improper Neutralization of Special Elements used in an SQL Command ('SQL Injection')"
+      owasp:
+        - "A03:2021 - Injection"
+      technology:
+        - rust
+        - diesel
+      likelihood: HIGH
+      impact: HIGH
+      subcategory:
+        - vuln
+    patterns:
+      - pattern-either:
+          - pattern: diesel::sql_query(format!(...))
+          - pattern: diesel::sql_query(&format!(...))
+
+  # sqlx
+  - id: rust-sql-injection-sqlx
+    languages: [rust]
+    severity: ERROR
+    message: >
+      SQL query constructed via format!() passed to sqlx::query().
+      Use sqlx::query() with bind parameters instead.
+    metadata:
+      confidence: HIGH
+      category: security
+      cwe:
+        - "CWE-89: Improper Neutralization of Special Elements used in an SQL Command ('SQL Injection')"
+      owasp:
+        - "A03:2021 - Injection"
+      technology:
+        - rust
+        - sqlx
+      likelihood: HIGH
+      impact: HIGH
+      subcategory:
+        - vuln
+    patterns:
+      - pattern-either:
+          - pattern: sqlx::query(&format!(...))
+          - pattern: sqlx::query(format!(...))

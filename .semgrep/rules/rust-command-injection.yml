@@ -1,0 +1,36 @@
+rules:
+  # NOTE: Taint-based rule removed — Semgrep cannot parse web::Query<$TYPE>
+  # as a Rust taint source (generic syntax unsupported in Rust parser).
+  # Pattern-based rules below provide equivalent coverage.
+
+  # Pattern-based: shell execution with -c flag
+  - id: rust-command-injection-shell
+    languages: [rust]
+    severity: ERROR
+    message: >
+      Shell command execution with -c flag detected. If the command
+      argument is user-controlled, this allows arbitrary command execution.
+      Avoid shell interpretation — use Command::new() with individual args
+      instead of passing to sh -c.
+    metadata:
+      confidence: HIGH
+      category: security
+      cwe:
+        - "CWE-78: Improper Neutralization of Special Elements used in an OS Command ('OS Command Injection')"
+      owasp:
+        - "A03:2021 - Injection"
+      technology:
+        - rust
+      likelihood: HIGH
+      impact: HIGH
+      subcategory:
+        - vuln
+      references:
+        - https://owasp.org/Top10/A03_2021-Injection/
+    pattern-either:
+      - pattern: Command::new("sh").arg("-c").arg(...)
+      - pattern: Command::new("bash").arg("-c").arg(...)
+      - pattern: Command::new("cmd").arg("/c").arg(...)
+      - pattern: Command::new("cmd.exe").arg("/c").arg(...)
+      - pattern: std::process::Command::new("sh").arg("-c").arg(...)
+      - pattern: std::process::Command::new("bash").arg("-c").arg(...)

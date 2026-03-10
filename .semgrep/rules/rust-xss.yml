@@ -1,0 +1,86 @@
+rules:
+  # Catches format!() used to build HTML response body
+  - id: rust-xss-format-html-variable
+    languages: [rust]
+    severity: ERROR
+    message: >
+      String interpolation used in an HTML response body. Ensure all
+      interpolated values are HTML-escaped to prevent XSS. Use the
+      html_escape crate or a template engine with auto-escaping.
+    metadata:
+      confidence: MEDIUM
+      category: security
+      cwe:
+        - "CWE-79: Improper Neutralization of Input During Web Page Generation ('Cross-site Scripting')"
+      owasp:
+        - "A03:2021 - Injection"
+      technology:
+        - rust
+        - actix-web
+      likelihood: MEDIUM
+      impact: MEDIUM
+      subcategory:
+        - vuln
+      references:
+        - https://owasp.org/Top10/A03_2021-Injection/
+    patterns:
+      - pattern: |
+          let $HTML = format!(...);
+          ...
+          HttpResponse::Ok()
+            .content_type("text/html")
+            .body($HTML)
+
+  - id: rust-xss-format-html-inline
+    languages: [rust]
+    severity: ERROR
+    message: >
+      String interpolation directly in an HTML response body. Ensure all
+      interpolated values are HTML-escaped to prevent XSS.
+    metadata:
+      confidence: MEDIUM
+      category: security
+      cwe:
+        - "CWE-79: Improper Neutralization of Input During Web Page Generation ('Cross-site Scripting')"
+      owasp:
+        - "A03:2021 - Injection"
+      technology:
+        - rust
+        - actix-web
+      likelihood: MEDIUM
+      impact: MEDIUM
+      subcategory:
+        - vuln
+    pattern: |
+      HttpResponse::Ok()
+        .content_type("text/html")
+        .body(format!(...))
+
+  # Catch any HttpResponse with text/html that uses format
+  - id: rust-xss-content-type-html-format
+    languages: [rust]
+    severity: WARNING
+    message: >
+      HTML response body built with format!(). If any interpolated values
+      come from user input, this is an XSS vulnerability. Use HTML escaping
+      or a template engine with auto-escaping enabled.
+    metadata:
+      confidence: LOW
+      category: security
+      cwe:
+        - "CWE-79: Improper Neutralization of Input During Web Page Generation ('Cross-site Scripting')"
+      owasp:
+        - "A03:2021 - Injection"
+      technology:
+        - rust
+        - actix-web
+      likelihood: LOW
+      impact: MEDIUM
+      subcategory:
+        - audit
+    patterns:
+      - pattern: |
+          let $BODY = format!(...);
+          ...
+          $RESP.content_type("text/html")
+            .body($BODY)
