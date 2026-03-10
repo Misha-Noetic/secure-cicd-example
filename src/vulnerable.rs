@@ -308,7 +308,15 @@ pub async fn exec_command(query: web::Query<CommandQuery>) -> impl Responder {
     // BAD: User input passed directly to shell
     let output = std::process::Command::new("sh")
         .arg("-c")
-        .arg(&query.cmd)
+// FIXED: Only allow specific trusted commands to be run, avoid passing user input directly to the shell
+let allowed = match query.cmd.as_str() {
+    "date" => "date",
+    "uptime" => "uptime",
+    // Add any other allowed commands here
+    _ => return HttpResponse::BadRequest().body("Command not allowed"),
+};
+let output = std::process::Command::new(allowed)
+    .output();
         .output();
 
     match output {
