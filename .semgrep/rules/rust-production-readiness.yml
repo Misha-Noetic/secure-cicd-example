@@ -10,6 +10,14 @@ rules:
     metadata:
       confidence: HIGH
       category: security
+      cwe:
+        - "CWE-248: Uncaught Exception"
+      technology:
+        - rust
+      likelihood: HIGH
+      impact: HIGH
+      subcategory:
+        - audit
     pattern: todo!(...)
 
   - id: rust-unimplemented-in-code
@@ -21,6 +29,14 @@ rules:
     metadata:
       confidence: HIGH
       category: security
+      cwe:
+        - "CWE-248: Uncaught Exception"
+      technology:
+        - rust
+      likelihood: HIGH
+      impact: HIGH
+      subcategory:
+        - audit
     pattern: unimplemented!(...)
 
   # .unwrap() inside async web handler — can crash the server
@@ -34,6 +50,15 @@ rules:
     metadata:
       confidence: LOW
       category: security
+      cwe:
+        - "CWE-248: Uncaught Exception"
+      technology:
+        - rust
+        - actix-web
+      likelihood: LOW
+      impact: MEDIUM
+      subcategory:
+        - audit
     patterns:
       - pattern: $EXPR.unwrap()
       - pattern-inside: |

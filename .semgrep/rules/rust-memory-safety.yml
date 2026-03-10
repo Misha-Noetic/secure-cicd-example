@@ -10,6 +10,14 @@ rules:
     metadata:
       confidence: HIGH
       category: security
+      cwe:
+        - "CWE-843: Access of Resource Using Incompatible Type ('Type Confusion')"
+      technology:
+        - rust
+      likelihood: MEDIUM
+      impact: HIGH
+      subcategory:
+        - audit
     pattern-either:
       - pattern: std::mem::transmute(...)
       - pattern: std::mem::transmute::<$A, $B>(...)
@@ -25,6 +33,14 @@ rules:
     metadata:
       confidence: HIGH
       category: security
+      cwe:
+        - "CWE-119: Improper Restriction of Operations within the Bounds of a Memory Buffer"
+      technology:
+        - rust
+      likelihood: MEDIUM
+      impact: HIGH
+      subcategory:
+        - audit
     pattern-either:
       - pattern: std::slice::from_raw_parts(...)
       - pattern: std::slice::from_raw_parts_mut(...)
@@ -39,6 +55,14 @@ rules:
     metadata:
       confidence: HIGH
       category: security
+      cwe:
+        - "CWE-415: Double Free"
+      technology:
+        - rust
+      likelihood: MEDIUM
+      impact: HIGH
+      subcategory:
+        - audit
     pattern: Box::from_raw(...)
 
   # Uninitialized memory
@@ -52,6 +76,14 @@ rules:
     metadata:
       confidence: HIGH
       category: security
+      cwe:
+        - "CWE-908: Use of Uninitialized Resource"
+      technology:
+        - rust
+      likelihood: HIGH
+      impact: HIGH
+      subcategory:
+        - vuln
     pattern-either:
       - pattern: std::mem::uninitialized()
       - pattern: std::mem::zeroed()
@@ -67,4 +99,12 @@ rules:
     metadata:
       confidence: MEDIUM
       category: security
+      cwe:
+        - "CWE-119: Improper Restriction of Operations within the Bounds of a Memory Buffer"
+      technology:
+        - rust
+      likelihood: LOW
+      impact: MEDIUM
+      subcategory:
+        - audit
     pattern: $VEC.set_len(...)

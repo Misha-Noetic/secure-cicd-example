@@ -15,6 +15,18 @@ rules:
     metadata:
       confidence: HIGH
       category: security
+      cwe:
+        - "CWE-78: Improper Neutralization of Special Elements used in an OS Command ('OS Command Injection')"
+      owasp:
+        - "A03:2021 - Injection"
+      technology:
+        - rust
+      likelihood: HIGH
+      impact: HIGH
+      subcategory:
+        - vuln
+      references:
+        - https://owasp.org/Top10/A03_2021-Injection/
     pattern-either:
       - pattern: Command::new("sh").arg("-c").arg(...)
       - pattern: Command::new("bash").arg("-c").arg(...)

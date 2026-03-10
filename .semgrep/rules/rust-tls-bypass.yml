@@ -9,6 +9,19 @@ rules:
     metadata:
       confidence: HIGH
       category: security
+      cwe:
+        - "CWE-295: Improper Certificate Validation"
+      owasp:
+        - "A07:2021 - Identification and Authentication Failures"
+      technology:
+        - rust
+        - reqwest
+      likelihood: HIGH
+      impact: HIGH
+      subcategory:
+        - vuln
+      references:
+        - https://owasp.org/Top10/A07_2021-Identification_and_Authentication_Failures/
     pattern-either:
       - pattern: $BUILDER.danger_accept_invalid_certs(true)
       - pattern: reqwest::Client::builder().danger_accept_invalid_certs(true)
@@ -23,6 +36,17 @@ rules:
     metadata:
       confidence: HIGH
       category: security
+      cwe:
+        - "CWE-295: Improper Certificate Validation"
+      owasp:
+        - "A07:2021 - Identification and Authentication Failures"
+      technology:
+        - rust
+        - reqwest
+      likelihood: HIGH
+      impact: HIGH
+      subcategory:
+        - vuln
     pattern-either:
       - pattern: $BUILDER.danger_accept_invalid_hostnames(true)
       - pattern: reqwest::Client::builder().danger_accept_invalid_hostnames(true)
@@ -37,4 +61,15 @@ rules:
     metadata:
       confidence: HIGH
       category: security
+      cwe:
+        - "CWE-295: Improper Certificate Validation"
+      owasp:
+        - "A07:2021 - Identification and Authentication Failures"
+      technology:
+        - rust
+        - native-tls
+      likelihood: HIGH
+      impact: HIGH
+      subcategory:
+        - vuln
     pattern: $BUILDER.danger_accept_invalid_certs(true)

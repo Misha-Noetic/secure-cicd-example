@@ -10,6 +10,18 @@ rules:
     metadata:
       confidence: HIGH
       category: security
+      cwe:
+        - "CWE-532: Insertion of Sensitive Information into Log File"
+      owasp:
+        - "A09:2021 - Security Logging and Monitoring Failures"
+      technology:
+        - rust
+      likelihood: HIGH
+      impact: MEDIUM
+      subcategory:
+        - vuln
+      references:
+        - https://owasp.org/Top10/A09_2021-Security_Logging_and_Monitoring_Failures/
     pattern-regex: 'log::(info|debug|warn|error|trace)!\s*\([^)]*(?i)password'
 
   - id: rust-cleartext-logging-secret
@@ -21,6 +33,16 @@ rules:
     metadata:
       confidence: MEDIUM
       category: security
+      cwe:
+        - "CWE-532: Insertion of Sensitive Information into Log File"
+      owasp:
+        - "A09:2021 - Security Logging and Monitoring Failures"
+      technology:
+        - rust
+      likelihood: MEDIUM
+      impact: MEDIUM
+      subcategory:
+        - vuln
     pattern-regex: 'log::(info|debug|warn|error|trace)!\s*\([^)]*(?i)(secret|token|api.key|credential|bearer|authorization)'
 
   # Same for tracing crate
@@ -33,6 +55,17 @@ rules:
     metadata:
       confidence: MEDIUM
       category: security
+      cwe:
+        - "CWE-532: Insertion of Sensitive Information into Log File"
+      owasp:
+        - "A09:2021 - Security Logging and Monitoring Failures"
+      technology:
+        - rust
+        - tracing
+      likelihood: MEDIUM
+      impact: MEDIUM
+      subcategory:
+        - vuln
     pattern-regex: 'tracing::(info|debug|warn|error|trace)!\s*\([^)]*(?i)(password|secret|token|api.key|credential)'
 
   # println/eprintln with sensitive data
@@ -45,6 +78,16 @@ rules:
     metadata:
       confidence: MEDIUM
       category: security
+      cwe:
+        - "CWE-532: Insertion of Sensitive Information into Log File"
+      owasp:
+        - "A09:2021 - Security Logging and Monitoring Failures"
+      technology:
+        - rust
+      likelihood: MEDIUM
+      impact: LOW
+      subcategory:
+        - audit
     pattern-regex: '(println|eprintln)!\s*\([^)]*(?i)(password|secret|token|api.key|credential)'
 
   # NOTE: Log injection taint rule removed — Semgrep cannot parse
@@ -62,6 +105,16 @@ rules:
     metadata:
       confidence: MEDIUM
       category: security
+      cwe:
+        - "CWE-117: Improper Output Neutralization for Logs"
+      owasp:
+        - "A09:2021 - Security Logging and Monitoring Failures"
+      technology:
+        - rust
+      likelihood: MEDIUM
+      impact: LOW
+      subcategory:
+        - vuln
     patterns:
       - pattern-either:
           - pattern: log::info!($FMT, ..., $QUERY.$FIELD, ...)

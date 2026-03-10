@@ -11,6 +11,14 @@ rules:
     metadata:
       confidence: MEDIUM
       category: security
+      cwe:
+        - "CWE-367: Time-of-check Time-of-use (TOCTOU) Race Condition"
+      technology:
+        - rust
+      likelihood: MEDIUM
+      impact: MEDIUM
+      subcategory:
+        - audit
     pattern: |
       $PATH.exists();
       ...
@@ -25,6 +33,14 @@ rules:
     metadata:
       confidence: MEDIUM
       category: security
+      cwe:
+        - "CWE-367: Time-of-check Time-of-use (TOCTOU) Race Condition"
+      technology:
+        - rust
+      likelihood: MEDIUM
+      impact: MEDIUM
+      subcategory:
+        - audit
     pattern: |
       $PATH.exists();
       ...
@@ -39,6 +55,14 @@ rules:
     metadata:
       confidence: MEDIUM
       category: security
+      cwe:
+        - "CWE-367: Time-of-check Time-of-use (TOCTOU) Race Condition"
+      technology:
+        - rust
+      likelihood: MEDIUM
+      impact: HIGH
+      subcategory:
+        - audit
     pattern-either:
       - pattern: |
           $PATH.exists();
@@ -63,4 +87,12 @@ rules:
     metadata:
       confidence: LOW
       category: security
+      cwe:
+        - "CWE-367: Time-of-check Time-of-use (TOCTOU) Race Condition"
+      technology:
+        - rust
+      likelihood: LOW
+      impact: MEDIUM
+      subcategory:
+        - audit
     pattern-regex: '\.exists\(\)\s*\{[\s\S]{0,300}std::fs::(read_to_string|read|write|File::open|File::create|remove_file|remove_dir_all)'

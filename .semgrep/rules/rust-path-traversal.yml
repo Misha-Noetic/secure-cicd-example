@@ -13,6 +13,18 @@ rules:
     metadata:
       confidence: MEDIUM
       category: security
+      cwe:
+        - "CWE-22: Improper Limitation of a Pathname to a Restricted Directory ('Path Traversal')"
+      owasp:
+        - "A01:2021 - Broken Access Control"
+      technology:
+        - rust
+      likelihood: HIGH
+      impact: HIGH
+      subcategory:
+        - vuln
+      references:
+        - https://owasp.org/Top10/A01_2021-Broken_Access_Control/
     pattern-either:
       - pattern: std::fs::read_to_string(&$OBJ.$FIELD)
       - pattern: std::fs::read(&$OBJ.$FIELD)
@@ -36,6 +48,16 @@ rules:
     metadata:
       confidence: LOW
       category: security
+      cwe:
+        - "CWE-22: Improper Limitation of a Pathname to a Restricted Directory ('Path Traversal')"
+      owasp:
+        - "A01:2021 - Broken Access Control"
+      technology:
+        - rust
+      likelihood: LOW
+      impact: HIGH
+      subcategory:
+        - audit
     pattern-either:
       - pattern: std::fs::remove_dir_all(...)
       - pattern: std::fs::set_permissions(...)

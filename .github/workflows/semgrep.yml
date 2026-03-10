@@ -31,31 +31,23 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      # ── Step 1: Platform scan (blocking policies, Assistant AI triage) ──
+      # ── Platform mode: blocking policies + AI triage ──
       # IMPORTANT: `semgrep ci` with SEMGREP_APP_TOKEN must run WITHOUT --config
       # or SEMGREP_RULES — those flags override platform-managed rules and break
-      # blocking policies. The platform manages its own rulesets and decides
-      # pass/fail based on your configured policies.
-      - name: Run Semgrep (platform rules)
+      # blocking policies. Custom rules are published to the platform registry
+      # via the semgrep-publish.yml workflow and managed in Policies there.
+      - name: Run Semgrep (platform)
         if: env.SEMGREP_APP_TOKEN != ''
         run: |
           echo "Running with Semgrep AppSec Platform (blocking policies active)"
+          echo "Custom rules are managed via platform Policies (published by semgrep-publish.yml)"
           semgrep ci
         env:
           SEMGREP_APP_TOKEN: ${{ secrets.SEMGREP_APP_TOKEN }}
 
-      # ── Step 2: Custom local rules (always runs, informational) ──
-      # Runs our repo-specific Rust security rules from .semgrep/rules/.
-      # Outputs SARIF for the GitHub Security tab. Does not block the pipeline
-      # (that's the platform's job above). Runs even if step 1 fails.
-      - name: Run Semgrep (custom rules)
-        if: always() && github.actor != 'dependabot[bot]'
-        run: |
-          echo "Running custom Rust security rules from .semgrep/rules/"
-          semgrep scan --config .semgrep/rules/ --sarif -o semgrep-custom.sarif || true
-
-      # ── Fallback: standalone mode (no platform token) ──
-      # Uses public rulesets + custom rules when SEMGREP_APP_TOKEN is not set.
+      # ── Standalone fallback (no platform token) ──
+      # Uses public rulesets + local custom rules when SEMGREP_APP_TOKEN is not
+      # set (e.g. forks, first-time setup). Outputs SARIF for GitHub Security tab.
       - name: Run Semgrep (standalone fallback)
         if: env.SEMGREP_APP_TOKEN == ''
         run: |
@@ -64,16 +56,9 @@ jobs:
         env:
           SEMGREP_APP_TOKEN: ${{ secrets.SEMGREP_APP_TOKEN }}
 
-      # Upload SARIF to GitHub Security tab
+      # Upload SARIF to GitHub Security tab (standalone mode only —
+      # platform mode handles this automatically)
       - name: Upload SARIF to GitHub Security tab
-        if: always()
-        uses: github/codeql-action/upload-sarif@v3
-        with:
-          sarif_file: semgrep-custom.sarif
-          category: semgrep-custom
-        continue-on-error: true
-
-      - name: Upload standalone SARIF to GitHub Security tab
         if: always() && hashFiles('semgrep-results.sarif') != ''
         uses: github/codeql-action/upload-sarif@v3
         with:

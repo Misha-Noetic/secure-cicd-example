@@ -10,6 +10,15 @@ rules:
     metadata:
       confidence: MEDIUM
       category: security
+      cwe:
+        - "CWE-400: Uncontrolled Resource Consumption"
+      technology:
+        - rust
+        - tokio
+      likelihood: MEDIUM
+      impact: MEDIUM
+      subcategory:
+        - audit
     patterns:
       - pattern-either:
           - pattern: std::fs::read_to_string(...)
@@ -31,6 +40,15 @@ rules:
     metadata:
       confidence: LOW
       category: security
+      cwe:
+        - "CWE-400: Uncontrolled Resource Consumption"
+      technology:
+        - rust
+        - tokio
+      likelihood: LOW
+      impact: MEDIUM
+      subcategory:
+        - audit
     patterns:
       - pattern: $MUTEX.lock().unwrap()
       - pattern-inside: |
@@ -49,6 +67,14 @@ rules:
     metadata:
       confidence: LOW
       category: security
+      cwe:
+        - "CWE-789: Memory Allocation with Excessive Size Value"
+      technology:
+        - rust
+      likelihood: LOW
+      impact: HIGH
+      subcategory:
+        - audit
     patterns:
       - pattern: Vec::with_capacity($SIZE)
       - pattern-inside: |
@@ -67,6 +93,15 @@ rules:
     metadata:
       confidence: LOW
       category: security
+      cwe:
+        - "CWE-400: Uncontrolled Resource Consumption"
+      technology:
+        - rust
+        - tokio
+      likelihood: LOW
+      impact: HIGH
+      subcategory:
+        - audit
     patterns:
       - pattern: |
           for $ITEM in $ITER {

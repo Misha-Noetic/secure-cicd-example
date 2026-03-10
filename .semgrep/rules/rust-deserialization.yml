@@ -14,6 +14,19 @@ rules:
     metadata:
       confidence: LOW
       category: security
+      cwe:
+        - "CWE-502: Deserialization of Untrusted Data"
+      owasp:
+        - "A08:2021 - Software and Data Integrity Failures"
+      technology:
+        - rust
+        - serde_yaml
+      likelihood: MEDIUM
+      impact: HIGH
+      subcategory:
+        - audit
+      references:
+        - https://owasp.org/Top10/A08_2021-Software_and_Data_Integrity_Failures/
     patterns:
       - pattern-either:
           - pattern: serde_yaml::from_str(&$VAR)
@@ -32,6 +45,17 @@ rules:
     metadata:
       confidence: LOW
       category: security
+      cwe:
+        - "CWE-502: Deserialization of Untrusted Data"
+      owasp:
+        - "A08:2021 - Software and Data Integrity Failures"
+      technology:
+        - rust
+        - bincode
+      likelihood: LOW
+      impact: HIGH
+      subcategory:
+        - audit
     patterns:
       - pattern-either:
           - pattern: bincode::deserialize($VAR)

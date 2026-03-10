@@ -11,6 +11,19 @@ rules:
     metadata:
       confidence: HIGH
       category: security
+      cwe:
+        - "CWE-89: Improper Neutralization of Special Elements used in an SQL Command ('SQL Injection')"
+      owasp:
+        - "A03:2021 - Injection"
+      technology:
+        - rust
+        - rusqlite
+      likelihood: HIGH
+      impact: HIGH
+      subcategory:
+        - vuln
+      references:
+        - https://owasp.org/Top10/A03_2021-Injection/
     patterns:
       - pattern-either:
           - pattern: |
@@ -31,6 +44,17 @@ rules:
     metadata:
       confidence: HIGH
       category: security
+      cwe:
+        - "CWE-89: Improper Neutralization of Special Elements used in an SQL Command ('SQL Injection')"
+      owasp:
+        - "A03:2021 - Injection"
+      technology:
+        - rust
+        - rusqlite
+      likelihood: HIGH
+      impact: HIGH
+      subcategory:
+        - vuln
     patterns:
       - pattern-either:
           - pattern: |
@@ -51,6 +75,17 @@ rules:
     metadata:
       confidence: HIGH
       category: security
+      cwe:
+        - "CWE-89: Improper Neutralization of Special Elements used in an SQL Command ('SQL Injection')"
+      owasp:
+        - "A03:2021 - Injection"
+      technology:
+        - rust
+        - rusqlite
+      likelihood: HIGH
+      impact: HIGH
+      subcategory:
+        - vuln
     patterns:
       - pattern-either:
           - pattern: $DB.prepare(&format!(...))
@@ -67,6 +102,17 @@ rules:
     metadata:
       confidence: HIGH
       category: security
+      cwe:
+        - "CWE-89: Improper Neutralization of Special Elements used in an SQL Command ('SQL Injection')"
+      owasp:
+        - "A03:2021 - Injection"
+      technology:
+        - rust
+        - diesel
+      likelihood: HIGH
+      impact: HIGH
+      subcategory:
+        - vuln
     patterns:
       - pattern-either:
           - pattern: diesel::sql_query(format!(...))
@@ -82,6 +128,17 @@ rules:
     metadata:
       confidence: HIGH
       category: security
+      cwe:
+        - "CWE-89: Improper Neutralization of Special Elements used in an SQL Command ('SQL Injection')"
+      owasp:
+        - "A03:2021 - Injection"
+      technology:
+        - rust
+        - sqlx
+      likelihood: HIGH
+      impact: HIGH
+      subcategory:
+        - vuln
     patterns:
       - pattern-either:
           - pattern: sqlx::query(&format!(...))
