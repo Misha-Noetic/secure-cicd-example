@@ -495,7 +495,19 @@ pub async fn toctou_read(query: web::Query<FileQuery>) -> impl Responder {
     let path = std::path::Path::new(&query.path);
     // BAD: TOCTOU race — file can change between check and read
     if path.exists() {
-        let data = std::fs::read_to_string(&path).unwrap_or_default();
+// Define a safe base directory for file reads
+let base = std::path::Path::new("/var/myapp/files");
+// Join user-supplied path to the base directory safely
+let candidate = base.join(&query.path);
+// Canonicalize the path to resolve symlinks and '..'
+let candidate = candidate.canonicalize().unwrap_or(base.to_path_buf());
+// Allow read only if path stays within base directory
+if candidate.starts_with(base) {
+    let data = std::fs::read_to_string(&candidate).unwrap_or_default();
+    HttpResponse::Ok().body(data)
+} else {
+    HttpResponse::Forbidden().body("Access denied")
+}
         HttpResponse::Ok().body(data)
     } else {
         HttpResponse::NotFound().body("File not found")
