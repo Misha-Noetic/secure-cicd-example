@@ -156,8 +156,8 @@ if !domain_allowed {
     return HttpResponse::BadRequest().body("Domain not allowed");
 }
 
-// Resolve host to IPs for extra protection
-if let Ok(mut addrs) = (host_str, url.port_or_known_default().unwrap_or(80)).to_socket_addrs() {
+    // Log login attempt without including sensitive user data
+    log::info!("Login attempt received");
     for addr in &mut addrs {
         match addr.ip() {
             IpAddr::V4(ip) => {
