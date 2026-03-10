@@ -1,0 +1,107 @@
+rules:
+  # MD5 — both fully-qualified and imported forms
+  - id: rust-weak-crypto-md5
+    languages: [rust]
+    severity: ERROR
+    message: >
+      MD5 is cryptographically broken. Do not use for password hashing,
+      integrity checks, or any security purpose. Use SHA-256 for integrity
+      or argon2/bcrypt for passwords.
+    metadata:
+      confidence: HIGH
+      category: security
+      cwe:
+        - "CWE-328: Use of Weak Hash"
+      owasp:
+        - "A02:2021 - Cryptographic Failures"
+      technology:
+        - rust
+      likelihood: HIGH
+      impact: MEDIUM
+      subcategory:
+        - vuln
+      references:
+        - https://owasp.org/Top10/A02_2021-Cryptographic_Failures/
+    pattern-either:
+      - pattern: md5::Md5::new(...)
+      - pattern: Md5::new(...)
+      - pattern: md5::compute(...)
+
+  # SHA1
+  - id: rust-weak-crypto-sha1
+    languages: [rust]
+    severity: ERROR
+    message: >
+      SHA1 is cryptographically broken. Do not use for security purposes.
+      Use SHA-256 or SHA-3 for integrity, argon2/bcrypt for passwords.
+    metadata:
+      confidence: HIGH
+      category: security
+      cwe:
+        - "CWE-328: Use of Weak Hash"
+      owasp:
+        - "A02:2021 - Cryptographic Failures"
+      technology:
+        - rust
+      likelihood: HIGH
+      impact: MEDIUM
+      subcategory:
+        - vuln
+    pattern-either:
+      - pattern: sha1::Sha1::new(...)
+      - pattern: Sha1::new(...)
+
+  # MD2, MD4
+  - id: rust-weak-crypto-md2-md4
+    languages: [rust]
+    severity: ERROR
+    message: >
+      MD2/MD4 are cryptographically broken. Do not use for any security
+      purpose.
+    metadata:
+      confidence: HIGH
+      category: security
+      cwe:
+        - "CWE-328: Use of Weak Hash"
+      owasp:
+        - "A02:2021 - Cryptographic Failures"
+      technology:
+        - rust
+      likelihood: HIGH
+      impact: MEDIUM
+      subcategory:
+        - vuln
+    pattern-either:
+      - pattern: md2::Md2::new(...)
+      - pattern: Md2::new(...)
+      - pattern: md4::Md4::new(...)
+      - pattern: Md4::new(...)
+
+  # Timing side-channel: non-constant-time comparison of secrets
+  - id: rust-timing-side-channel
+    languages: [rust]
+    severity: WARNING
+    message: >
+      Direct comparison of secrets leaks information through timing
+      side-channels. Use subtle::ConstantTimeEq instead of == for
+      comparing tokens, keys, or passwords.
+    metadata:
+      confidence: LOW
+      category: security
+      cwe:
+        - "CWE-208: Observable Timing Discrepancy"
+      owasp:
+        - "A02:2021 - Cryptographic Failures"
+      technology:
+        - rust
+      likelihood: LOW
+      impact: MEDIUM
+      subcategory:
+        - audit
+    patterns:
+      - pattern-either:
+          - pattern: $SECRET == $INPUT
+          - pattern: $INPUT == $SECRET
+      - metavariable-regex:
+          metavariable: $SECRET
+          regex: "(?i).*(secret|token|key|password|api_key|auth|hash|hmac|digest).*"

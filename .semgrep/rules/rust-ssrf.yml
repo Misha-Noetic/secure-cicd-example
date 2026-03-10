@@ -1,0 +1,70 @@
+rules:
+  # SSRF: user-controlled URL in HTTP client requests
+  - id: rust-ssrf-reqwest-get
+    languages: [rust]
+    severity: ERROR
+    message: >
+      User input flows into an HTTP client request URL. This may allow
+      Server-Side Request Forgery (SSRF) attacks. An attacker could target
+      internal services (e.g., cloud metadata at 169.254.169.254). Validate
+      URLs against an allowlist of permitted hosts.
+    metadata:
+      confidence: MEDIUM
+      category: security
+      cwe:
+        - "CWE-918: Server-Side Request Forgery (SSRF)"
+      owasp:
+        - "A10:2021 - Server-Side Request Forgery (SSRF)"
+      technology:
+        - rust
+        - reqwest
+      likelihood: MEDIUM
+      impact: HIGH
+      subcategory:
+        - vuln
+      references:
+        - https://owasp.org/Top10/A10_2021-Server-Side_Request_Forgery_%28SSRF%29/
+    patterns:
+      - pattern-either:
+          - pattern: $CLIENT.get(&$OBJ.$FIELD)
+          - pattern: $CLIENT.post(&$OBJ.$FIELD)
+          - pattern: $CLIENT.put(&$OBJ.$FIELD)
+          - pattern: $CLIENT.delete(&$OBJ.$FIELD)
+          - pattern: $CLIENT.patch(&$OBJ.$FIELD)
+          - pattern: $CLIENT.head(&$OBJ.$FIELD)
+          - pattern: $CLIENT.get($OBJ.$FIELD)
+          - pattern: $CLIENT.post($OBJ.$FIELD)
+      - pattern-inside: |
+          pub async fn $FN(...) -> $RET {
+            ...
+          }
+
+  # Reqwest::get() as standalone function with variable URL
+  - id: rust-ssrf-reqwest-standalone
+    languages: [rust]
+    severity: ERROR
+    message: >
+      User-controlled URL passed to reqwest HTTP function. Validate
+      URLs against an allowlist to prevent SSRF attacks.
+    metadata:
+      confidence: MEDIUM
+      category: security
+      cwe:
+        - "CWE-918: Server-Side Request Forgery (SSRF)"
+      owasp:
+        - "A10:2021 - Server-Side Request Forgery (SSRF)"
+      technology:
+        - rust
+        - reqwest
+      likelihood: MEDIUM
+      impact: HIGH
+      subcategory:
+        - vuln
+    patterns:
+      - pattern-either:
+          - pattern: reqwest::get(&$OBJ.$FIELD)
+          - pattern: reqwest::get($OBJ.$FIELD)
+      - pattern-inside: |
+          pub async fn $FN(...) -> $RET {
+            ...
+          }
