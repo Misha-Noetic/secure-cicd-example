@@ -31,19 +31,28 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      # ── Platform mode: blocking policies + AI triage ──
+      # ── Step 1: Platform scan (blocking policies) ──
       # IMPORTANT: `semgrep ci` with SEMGREP_APP_TOKEN must run WITHOUT --config
       # or SEMGREP_RULES — those flags override platform-managed rules and break
-      # blocking policies. Custom rules are published to the platform registry
-      # via the semgrep-publish.yml workflow and managed in Policies there.
-      - name: Run Semgrep (platform)
+      # blocking policies. On Team tier, use semgrep-publish.yml to push custom
+      # rules to the platform. On free tier, custom rules run separately below.
+      - name: Run Semgrep (platform rules)
         if: env.SEMGREP_APP_TOKEN != ''
         run: |
           echo "Running with Semgrep AppSec Platform (blocking policies active)"
-          echo "Custom rules are managed via platform Policies (published by semgrep-publish.yml)"
           semgrep ci
         env:
           SEMGREP_APP_TOKEN: ${{ secrets.SEMGREP_APP_TOKEN }}
+
+      # ── Step 2: Custom local rules (blocking) ──
+      # Runs repo-specific Rust security rules from .semgrep/rules/.
+      # Outputs SARIF for the GitHub Security tab. Also blocks on findings.
+      # Runs even if step 1 fails.
+      - name: Run Semgrep (custom rules)
+        if: always() && github.actor != 'dependabot[bot]'
+        run: |
+          echo "Running custom Rust security rules from .semgrep/rules/"
+          semgrep scan --config .semgrep/rules/ --sarif -o semgrep-custom.sarif
 
       # ── Standalone fallback (no platform token) ──
       # Uses public rulesets + local custom rules when SEMGREP_APP_TOKEN is not
@@ -56,9 +65,17 @@ jobs:
         env:
           SEMGREP_APP_TOKEN: ${{ secrets.SEMGREP_APP_TOKEN }}
 
-      # Upload SARIF to GitHub Security tab (standalone mode only —
-      # platform mode handles this automatically)
-      - name: Upload SARIF to GitHub Security tab
+      # Upload custom rules SARIF to GitHub Security tab
+      - name: Upload custom rules SARIF
+        if: always() && hashFiles('semgrep-custom.sarif') != ''
+        uses: github/codeql-action/upload-sarif@v3
+        with:
+          sarif_file: semgrep-custom.sarif
+          category: semgrep-custom
+        continue-on-error: true
+
+      # Upload standalone SARIF to GitHub Security tab
+      - name: Upload standalone SARIF
         if: always() && hashFiles('semgrep-results.sarif') != ''
         uses: github/codeql-action/upload-sarif@v3
         with:
