@@ -1,8 +1,6 @@
 use actix_web::{get, post, web, App, HttpResponse, HttpServer, Responder};
 use serde::{Deserialize, Serialize};
 
-mod vulnerable;
-
 #[derive(Serialize, Deserialize)]
 struct HealthResponse {
     status: String,
@@ -62,36 +60,11 @@ async fn create_item(item: web::Json<CreateItem>) -> impl Responder {
 async fn main() -> std::io::Result<()> {
     println!("Starting server on http://127.0.0.1:8080");
 
-    env_logger::init();
-
     HttpServer::new(|| {
         App::new()
             .service(health_check)
             .service(list_items)
             .service(create_item)
-            // Intentionally vulnerable endpoints for SAST scanner testing
-            .service(vulnerable::search_items)
-            .service(vulnerable::greet_user)
-            .service(vulnerable::read_file)
-            .service(vulnerable::fetch_url)
-            .service(vulnerable::logged_search)
-            .service(vulnerable::login)
-            .service(vulnerable::hash_password)
-            .service(vulnerable::regex_search)
-            .service(vulnerable::send_report)
-            .service(vulnerable::exec_command)
-            .service(vulnerable::unsafe_transmute)
-            .service(vulnerable::open_redirect)
-            .service(vulnerable::jwt_insecure)
-            .service(vulnerable::insecure_tls_fetch)
-            .service(vulnerable::db_status)
-            .service(vulnerable::error_detail)
-            .service(vulnerable::upcoming_feature)
-            .service(vulnerable::parse_yaml)
-            .service(vulnerable::blocking_read)
-            .service(vulnerable::unbounded_alloc)
-            .service(vulnerable::verify_token)
-            .service(vulnerable::toctou_read)
     })
     .bind("127.0.0.1:8080")?
     .run()
