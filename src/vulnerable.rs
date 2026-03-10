@@ -125,7 +125,60 @@ pub async fn read_file(query: web::Query<FileQuery>) -> impl Responder {
 pub async fn fetch_url(query: web::Query<FetchQuery>) -> impl Responder {
     // BAD: User-controlled URL passed directly to HTTP client
     let client = reqwest::Client::new();
-    match client.get(&query.url).send().await {
+// Strict SSRF protection: Allowlist trusted domains and scheme, and deny internal/localhost/private IPs
+use url::Url;
+use std::net::{IpAddr, ToSocketAddrs};
+
+// Allowlist of trusted domains
+let allowed_domains = ["example.com", "api.example.com"];
+let allowed_schemes = ["http", "https"];
+
+// Attempt to parse the URL
+let url = match Url::parse(&query.url) {
+    Ok(u) => u,
+    Err(_) => return HttpResponse::BadRequest().body("Invalid URL format"),
+};
+
+// Check allowed scheme
+if !allowed_schemes.contains(&url.scheme()) {
+    return HttpResponse::BadRequest().body("Unsupported URL scheme");
+}
+
+// Disallow localhost/loopback and private IPs
+let host_str = match url.host_str() {
+    Some(h) => h,
+    None => return HttpResponse::BadRequest().body("Missing host in URL"),
+};
+
+// Check against allowed domains
+let domain_allowed = allowed_domains.iter().any(|d| host_str.eq_ignore_ascii_case(d));
+if !domain_allowed {
+    return HttpResponse::BadRequest().body("Domain not allowed");
+}
+
+// Resolve host to IPs for extra protection
+if let Ok(mut addrs) = (host_str, url.port_or_known_default().unwrap_or(80)).to_socket_addrs() {
+    for addr in &mut addrs {
+        match addr.ip() {
+            IpAddr::V4(ip) => {
+                // Check for private, loopback, and link-local addresses
+                if ip.is_private() || ip.is_loopback() || ip.is_link_local() {
+                    return HttpResponse::BadRequest().body("Request to private/internal IPs not allowed");
+                }
+            }
+            IpAddr::V6(ip) => {
+                if ip.is_loopback() || ip.is_unspecified() {
+                    return HttpResponse::BadRequest().body("Request to loopback/internal IPs not allowed");
+                }
+            }
+        }
+    }
+} else {
+    return HttpResponse::BadRequest().body("Failed to resolve host");
+}
+
+// The URL has passed all validations, safe to proceed
+match client.get(url).send().await {
         Ok(resp) => {
             let body = resp.text().await.unwrap_or_default();
             HttpResponse::Ok().body(body)
