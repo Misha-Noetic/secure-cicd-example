@@ -492,7 +492,21 @@ pub async fn verify_token(query: web::Query<TokenQuery>) -> impl Responder {
 // ─────────────────────────────────────────────────────────────────────────────
 #[get("/safe-read")]
 pub async fn toctou_read(query: web::Query<FileQuery>) -> impl Responder {
-    let path = std::path::Path::new(&query.path);
+// Sanitize user-supplied file paths and restrict access to "/safe/dir"
+use std::path::{Path, PathBuf};
+
+// Reject paths containing ".." or starting with "/"
+if query.path.contains("..") || query.path.starts_with('/') {
+    return HttpResponse::BadRequest().body("Invalid file path");
+}
+// Restrict all reads to a fixed safe base directory
+let base = Path::new("/safe/dir");
+let full_path = base.join(&query.path);
+
+// Ensure the final resolved path is still within the base directory
+if !full_path.starts_with(base) {
+    return HttpResponse::BadRequest().body("Invalid file path");
+}
     // BAD: TOCTOU race — file can change between check and read
     if path.exists() {
 // Define a safe base directory for file reads
