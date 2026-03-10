@@ -375,10 +375,10 @@ Credentials committed to source code.
 
 **Dangerous patterns:**
 ```rust
-let db_url = "postgres://admin:s3cret_p@ss@prod-db.internal:5432/myapp";
-let api_key = "sk_live_abc123def456ghi789";
-const JWT_SECRET: &str = "my-super-secret-jwt-signing-key-do-not-share";
-let private_key = "-----BEGIN RSA PRIVATE KEY-----\nMIIEpAIBAAK...";
+let db_url = "postgres://admin:REDACTED@prod-db.internal:5432/myapp";
+let api_key = "sk_live_EXAMPLE_REDACTED";
+const JWT_SECRET: &str = "EXAMPLE-DO-NOT-USE";
+let private_key = "-----BEGIN EXAMPLE KEY-----\nREDACTED...";
 ```
 
 **Safe alternative:**

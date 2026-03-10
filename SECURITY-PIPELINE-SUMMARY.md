@@ -83,7 +83,7 @@ Required status checks, no direct push to main, PR-based workflow enforced.
 | 13 | Open redirect | User input in `Location` header |
 | 14 | JWT insecure decode | `dangerous_insecure_decode()` |
 | 15 | TLS bypass | `danger_accept_invalid_certs(true)` |
-| 16 | Hardcoded DB password | `"postgres://admin:hunter2@prod.db:5432"` literal |
+| 16 | Hardcoded DB password | `"postgres://admin:REDACTED@prod.db:5432"` literal |
 | 17 | Error info disclosure | `format!("Internal error: {:?}", err)` in 500 response |
 | 18 | todo!() in handler | `todo!()` left in production endpoint |
 | 19 | YAML deserialization | `serde_yaml::from_str()` on user input |
