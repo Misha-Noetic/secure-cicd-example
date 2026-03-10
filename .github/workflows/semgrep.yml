@@ -36,8 +36,8 @@ jobs:
       - name: Run Semgrep
         run: |
           if [ -n "$SEMGREP_APP_TOKEN" ]; then
-            echo "Running with Semgrep AppSec Platform (Assistant enabled)"
-            semgrep ci
+            echo "Running with Semgrep AppSec Platform (Assistant enabled) + custom rules"
+            semgrep ci --config .semgrep/rules/
           else
             echo "Running standalone (no platform token — using default + Rust + custom rulesets)"
             semgrep ci --config auto --config p/rust --config .semgrep/rules/ --sarif -o semgrep-results.sarif || true
