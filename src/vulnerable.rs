@@ -364,7 +364,7 @@ pub async fn error_detail() -> impl Responder {
 // todo!() panics at runtime — server crashes on this endpoint.
 // ─────────────────────────────────────────────────────────────────────────────
 #[get("/upcoming")]
-pub async fn upcoming_feature() -> impl Responder {
+pub async fn upcoming_feature() -> HttpResponse {
     // BAD: todo!() panics at runtime — crashes the server
     todo!("implement this feature before release")
 }
