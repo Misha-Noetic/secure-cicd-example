@@ -1,0 +1,43 @@
+rules:
+  # Pattern-based: non-literal input into Regex::new
+  - id: rust-regex-injection-variable
+    languages: [rust]
+    severity: ERROR
+    message: >
+      A variable is used as a regex pattern. If user-controlled, this
+      allows regex injection and ReDoS attacks. Use regex::escape() to
+      escape user input, or validate patterns before compilation.
+    metadata:
+      confidence: MEDIUM
+      category: security
+    patterns:
+      - pattern-either:
+          - pattern: regex::Regex::new(&$VAR)
+          - pattern: Regex::new(&$VAR)
+          - pattern: regex::Regex::new($VAR)
+          - pattern: Regex::new($VAR)
+      - pattern-not: regex::Regex::new("...")
+      - pattern-not: Regex::new("...")
+
+  # RegexSet with variable
+  - id: rust-regex-injection-set
+    languages: [rust]
+    severity: ERROR
+    message: >
+      A variable is used to build a RegexSet. If user-controlled, this
+      allows regex injection and ReDoS attacks.
+    metadata:
+      confidence: MEDIUM
+      category: security
+    patterns:
+      - pattern-either:
+          - pattern: regex::RegexSet::new(&$VAR)
+          - pattern: RegexSet::new(&$VAR)
+          - pattern: regex::RegexSet::new($VAR)
+          - pattern: RegexSet::new($VAR)
+      - pattern-not: regex::RegexSet::new(&[...])
+      - pattern-not: RegexSet::new(&[...])
+
+  # NOTE: Taint-based rule removed — Semgrep cannot parse web::Query<$TYPE>
+  # as a Rust taint source. The pattern-based rule above catches the same
+  # pattern (variable input into Regex::new).

@@ -1,0 +1,66 @@
+rules:
+  # TOCTOU: exists() then read on same path (sequential statements)
+  - id: rust-toctou-exists-then-read
+    languages: [rust]
+    severity: WARNING
+    message: >
+      File existence check followed by file read creates a TOCTOU race
+      condition. An attacker can replace the file (e.g. with a symlink)
+      between the check and the use. Open the file directly and handle
+      errors instead.
+    metadata:
+      confidence: MEDIUM
+      category: security
+    pattern: |
+      $PATH.exists();
+      ...
+      std::fs::read_to_string(&$PATH)
+
+  - id: rust-toctou-exists-then-open
+    languages: [rust]
+    severity: WARNING
+    message: >
+      File existence check followed by file open creates a TOCTOU race
+      condition. Open the file directly and handle errors instead.
+    metadata:
+      confidence: MEDIUM
+      category: security
+    pattern: |
+      $PATH.exists();
+      ...
+      std::fs::File::open(&$PATH)
+
+  - id: rust-toctou-exists-then-remove
+    languages: [rust]
+    severity: WARNING
+    message: >
+      File existence check followed by delete creates a TOCTOU race.
+      Delete directly and handle NotFound errors instead.
+    metadata:
+      confidence: MEDIUM
+      category: security
+    pattern-either:
+      - pattern: |
+          $PATH.exists();
+          ...
+          std::fs::remove_file(&$PATH)
+      - pattern: |
+          $PATH.exists();
+          ...
+          std::fs::remove_dir_all(&$PATH)
+
+  # If-block variant: if exists() { ... read ... }
+  # NOTE: Semgrep AST matching struggles with std::fs:: calls as subexpressions
+  # inside if-blocks (e.g. inside let bindings). Using regex as fallback.
+  - id: rust-toctou-if-exists
+    languages: [rust]
+    severity: WARNING
+    message: >
+      File existence check followed by filesystem operation in the same
+      block. This creates a TOCTOU race condition where an attacker can
+      swap the file between the check and the operation. Use the file
+      operation directly and handle errors instead of checking exists().
+    metadata:
+      confidence: LOW
+      category: security
+    pattern-regex: '\.exists\(\)\s*\{[\s\S]{0,300}std::fs::(read_to_string|read|write|File::open|File::create|remove_file|remove_dir_all)'

@@ -1,0 +1,70 @@
+rules:
+  # CORS permissive — both imported and fully-qualified
+  - id: rust-cors-permissive
+    languages: [rust]
+    severity: WARNING
+    message: >
+      Cors::permissive() allows requests from any origin, effectively
+      disabling the same-origin policy. Restrict to trusted origins.
+    metadata:
+      confidence: HIGH
+      category: security
+    pattern-either:
+      - pattern: Cors::permissive()
+      - pattern: actix_cors::Cors::permissive()
+
+  - id: rust-cors-wildcard-origin
+    languages: [rust]
+    severity: WARNING
+    message: >
+      Wildcard CORS origin allows any website to make cross-origin
+      requests. Restrict to specific trusted origins.
+    metadata:
+      confidence: HIGH
+      category: security
+    pattern: $CORS.allowed_origin("*")
+
+  # NOTE: Open redirect taint rule removed — Semgrep cannot parse
+  # web::Query<$TYPE> as a Rust taint source. Pattern fallback below.
+
+  # Open redirect — pattern-based
+  - id: rust-open-redirect-pattern
+    languages: [rust]
+    severity: WARNING
+    message: >
+      HTTP redirect with variable Location header. If user-controlled,
+      this allows open redirect attacks. Validate against an allowlist.
+    metadata:
+      confidence: LOW
+      category: security
+    patterns:
+      - pattern-either:
+          - pattern: |
+              HttpResponse::Found()
+                .insert_header(("Location", $VAR))
+          - pattern: |
+              HttpResponse::TemporaryRedirect()
+                .insert_header(("Location", $VAR))
+          - pattern: |
+              HttpResponse::SeeOther()
+                .insert_header(("Location", $VAR))
+      - pattern-not: |
+          HttpResponse::Found()
+            .insert_header(("Location", "..."))
+      - pattern-not: |
+          HttpResponse::TemporaryRedirect()
+            .insert_header(("Location", "..."))
+
+  # Error information disclosure
+  - id: rust-error-info-disclosure
+    languages: [rust]
+    severity: WARNING
+    message: >
+      Internal error details exposed in HTTP response. Return generic
+      error messages to users and log details server-side instead.
+    metadata:
+      confidence: MEDIUM
+      category: security
+    pattern-either:
+      - pattern: HttpResponse::InternalServerError().body(format!(...))
+      - pattern: HttpResponse::BadGateway().body(format!(...))

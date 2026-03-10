@@ -1,0 +1,40 @@
+rules:
+  # Fixed seed PRNG — completely predictable
+  - id: rust-fixed-seed-rng
+    languages: [rust]
+    severity: ERROR
+    message: >
+      Random number generator initialized with a fixed seed. Output is
+      completely predictable. Use OsRng for cryptographic randomness or
+      thread_rng() for non-crypto random.
+    metadata:
+      confidence: HIGH
+      category: security
+    pattern-either:
+      - pattern: SmallRng::seed_from_u64(...)
+      - pattern: StdRng::seed_from_u64(...)
+      - pattern: rand::rngs::SmallRng::seed_from_u64(...)
+      - pattern: rand::rngs::StdRng::seed_from_u64(...)
+      - pattern: ChaChaRng::seed_from_u64(...)
+      - pattern: rand_chacha::ChaChaRng::seed_from_u64(...)
+
+  # thread_rng in security-sensitive function names
+  - id: rust-thread-rng-for-crypto
+    languages: [rust]
+    severity: WARNING
+    message: >
+      thread_rng() used in a security-sensitive context. While
+      thread_rng() is cryptographically strong, OsRng is preferred for
+      key generation, token creation, and other security-critical uses.
+    metadata:
+      confidence: LOW
+      category: security
+    patterns:
+      - pattern: rand::thread_rng()
+      - pattern-inside: |
+          fn $FN(...) {
+            ...
+          }
+      - metavariable-regex:
+          metavariable: $FN
+          regex: "(?i)(gen.*(token|key|secret|nonce|salt)|create.*(token|key|session)|generate.*(password|secret))"

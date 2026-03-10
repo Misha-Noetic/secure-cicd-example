@@ -1,0 +1,11 @@
+rules:
+  - id: rust-non-https-url-literal
+    languages: [rust]
+    severity: WARNING
+    message: >
+      HTTP URL literal detected. Use HTTPS for all network communication
+      to prevent data interception. Change http:// to https://.
+    metadata:
+      confidence: MEDIUM
+      category: security
+    pattern-regex: '"http://[a-zA-Z0-9][^"]*"'

@@ -1,0 +1,70 @@
+rules:
+  # Type confusion via transmute
+  - id: rust-unsafe-transmute
+    languages: [rust]
+    severity: ERROR
+    message: >
+      std::mem::transmute() reinterprets bits of one type as another.
+      This bypasses type safety and can cause undefined behavior. Consider
+      using safe casts (as, From/Into) or TryFrom instead.
+    metadata:
+      confidence: HIGH
+      category: security
+    pattern-either:
+      - pattern: std::mem::transmute(...)
+      - pattern: std::mem::transmute::<$A, $B>(...)
+
+  # Buffer overflow via from_raw_parts
+  - id: rust-unsafe-from-raw-parts
+    languages: [rust]
+    severity: ERROR
+    message: >
+      std::slice::from_raw_parts() creates a slice from a raw pointer and
+      length. Incorrect length causes buffer overflow reads. Ensure the
+      pointer is valid and length is correct.
+    metadata:
+      confidence: HIGH
+      category: security
+    pattern-either:
+      - pattern: std::slice::from_raw_parts(...)
+      - pattern: std::slice::from_raw_parts_mut(...)
+
+  # Double free / use-after-free via Box::from_raw
+  - id: rust-unsafe-box-from-raw
+    languages: [rust]
+    severity: ERROR
+    message: >
+      Box::from_raw() takes ownership of a raw pointer. Calling it twice
+      on the same pointer causes double-free. Ensure single ownership.
+    metadata:
+      confidence: HIGH
+      category: security
+    pattern: Box::from_raw(...)
+
+  # Uninitialized memory
+  - id: rust-unsafe-uninitialized-memory
+    languages: [rust]
+    severity: ERROR
+    message: >
+      Uninitialized or zeroed memory is dangerous for types with
+      invariants (references, enums, strings). Use MaybeUninit properly
+      or initialize with default values.
+    metadata:
+      confidence: HIGH
+      category: security
+    pattern-either:
+      - pattern: std::mem::uninitialized()
+      - pattern: std::mem::zeroed()
+
+  # Vec::set_len beyond capacity
+  - id: rust-unsafe-vec-set-len
+    languages: [rust]
+    severity: WARNING
+    message: >
+      Vec::set_len() can expose uninitialized memory or cause buffer
+      overflow if the new length exceeds capacity. Ensure the length is
+      within bounds and all elements are initialized.
+    metadata:
+      confidence: MEDIUM
+      category: security
+    pattern: $VEC.set_len(...)
