@@ -1,0 +1,63 @@
+rules:
+  # NOTE: Taint-based rule removed — Semgrep cannot parse web::Query<$TYPE>
+  # as a Rust taint source. Pattern-based rules below provide coverage.
+
+  # Pattern: fs operations on struct field access (catches query.path, etc.)
+  - id: rust-path-traversal-struct-field
+    languages: [rust]
+    severity: ERROR
+    message: >
+      File system operation uses a struct field that may be user-controlled.
+      This allows path traversal attacks (../../etc/passwd). Canonicalize
+      the path and verify it stays within the allowed directory.
+    metadata:
+      confidence: MEDIUM
+      category: security
+      cwe:
+        - "CWE-22: Improper Limitation of a Pathname to a Restricted Directory ('Path Traversal')"
+      owasp:
+        - "A01:2021 - Broken Access Control"
+      technology:
+        - rust
+      likelihood: HIGH
+      impact: HIGH
+      subcategory:
+        - vuln
+      references:
+        - https://owasp.org/Top10/A01_2021-Broken_Access_Control/
+    pattern-either:
+      - pattern: std::fs::read_to_string(&$OBJ.$FIELD)
+      - pattern: std::fs::read(&$OBJ.$FIELD)
+      - pattern: std::fs::write(&$OBJ.$FIELD, ...)
+      - pattern: std::fs::remove_file(&$OBJ.$FIELD)
+      - pattern: std::fs::remove_dir_all(&$OBJ.$FIELD)
+      - pattern: std::fs::File::open(&$OBJ.$FIELD)
+      - pattern: std::fs::File::create(&$OBJ.$FIELD)
+      - pattern: std::fs::copy(&$OBJ.$FIELD, ...)
+      - pattern: std::fs::copy(..., &$OBJ.$FIELD)
+      - pattern: tokio::fs::read_to_string(&$OBJ.$FIELD)
+
+  # Dangerous filesystem operations — audit flag
+  - id: rust-fs-destructive-operations
+    languages: [rust]
+    severity: WARNING
+    message: >
+      Destructive filesystem operation detected. Ensure the path is
+      validated and not user-controlled. remove_dir_all() is especially
+      dangerous as it recursively deletes all contents.
+    metadata:
+      confidence: LOW
+      category: security
+      cwe:
+        - "CWE-22: Improper Limitation of a Pathname to a Restricted Directory ('Path Traversal')"
+      owasp:
+        - "A01:2021 - Broken Access Control"
+      technology:
+        - rust
+      likelihood: LOW
+      impact: HIGH
+      subcategory:
+        - audit
+    pattern-either:
+      - pattern: std::fs::remove_dir_all(...)
+      - pattern: std::fs::set_permissions(...)

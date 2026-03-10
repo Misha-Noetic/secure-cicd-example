@@ -1,0 +1,63 @@
+rules:
+  # NOTE: Taint-based rules removed — Semgrep cannot parse web::Query<$TYPE>
+  # as a Rust taint source (generic syntax unsupported in Rust parser).
+  # Pattern-based rules below provide equivalent coverage.
+
+  # Pattern-based: serde_yaml::from_str on any variable (not just web input)
+  - id: rust-yaml-deserialization-audit
+    languages: [rust]
+    severity: WARNING
+    message: >
+      YAML deserialization detected. If the input is user-controlled,
+      this may allow billion laughs (entity expansion) or other attacks.
+      Validate input size and prefer JSON for untrusted data.
+    metadata:
+      confidence: LOW
+      category: security
+      cwe:
+        - "CWE-502: Deserialization of Untrusted Data"
+      owasp:
+        - "A08:2021 - Software and Data Integrity Failures"
+      technology:
+        - rust
+        - serde_yaml
+      likelihood: MEDIUM
+      impact: HIGH
+      subcategory:
+        - audit
+      references:
+        - https://owasp.org/Top10/A08_2021-Software_and_Data_Integrity_Failures/
+    patterns:
+      - pattern-either:
+          - pattern: serde_yaml::from_str(&$VAR)
+          - pattern: serde_yaml::from_str($VAR)
+          - pattern: serde_yaml::from_slice($VAR)
+      - pattern-not: serde_yaml::from_str("...")
+
+  # Bincode deserialization — audit flag
+  - id: rust-bincode-deserialization-audit
+    languages: [rust]
+    severity: WARNING
+    message: >
+      Bincode deserialization detected. Crafted input can claim large
+      allocations causing OOM. Set size limits with
+      bincode::Options::with_limit() and validate input source.
+    metadata:
+      confidence: LOW
+      category: security
+      cwe:
+        - "CWE-502: Deserialization of Untrusted Data"
+      owasp:
+        - "A08:2021 - Software and Data Integrity Failures"
+      technology:
+        - rust
+        - bincode
+      likelihood: LOW
+      impact: HIGH
+      subcategory:
+        - audit
+    patterns:
+      - pattern-either:
+          - pattern: bincode::deserialize($VAR)
+          - pattern: bincode::deserialize_from($VAR)
+      - pattern-not: bincode::deserialize("...")
