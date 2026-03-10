@@ -315,9 +315,8 @@ pub async fn unsafe_transmute(query: web::Query<SearchQuery>) -> impl Responder 
 // Cors::permissive() allows any origin to make cross-origin requests.
 // NOTE: This is configured at the App level, not as an endpoint.
 //       The function below just documents the pattern for testing.
-//       Actual usage: App::new().wrap(Cors::permissive())
+    // Uses default TLS certificate validation
 // ─────────────────────────────────────────────────────────────────────────────
-pub fn cors_permissive_config() -> actix_cors::Cors {
     // BAD: Allows any origin — effectively disables same-origin policy
     actix_cors::Cors::permissive()
 }
