@@ -1,0 +1,76 @@
+rules:
+  # Blocking file I/O inside async handler
+  - id: rust-blocking-fs-in-async
+    languages: [rust]
+    severity: WARNING
+    message: >
+      Blocking std::fs operation inside an async function. This blocks
+      the entire Tokio runtime thread and starves other tasks. Use
+      tokio::fs instead, or wrap in tokio::task::spawn_blocking().
+    metadata:
+      confidence: MEDIUM
+      category: security
+    patterns:
+      - pattern-either:
+          - pattern: std::fs::read_to_string(...)
+          - pattern: std::fs::read(...)
+          - pattern: std::fs::write(...)
+      - pattern-inside: |
+          pub async fn $FN(...) -> $RET {
+            ...
+          }
+
+  # Blocking std::sync::Mutex in async context
+  - id: rust-blocking-mutex-in-async
+    languages: [rust]
+    severity: WARNING
+    message: >
+      std::sync::Mutex::lock() blocks the current thread. In async code,
+      this starves other tasks on the same runtime thread. Use
+      tokio::sync::Mutex instead.
+    metadata:
+      confidence: LOW
+      category: security
+    patterns:
+      - pattern: $MUTEX.lock().unwrap()
+      - pattern-inside: |
+          pub async fn $FN(...) -> $RET {
+            ...
+          }
+
+  # Unbounded Vec allocation from user input
+  - id: rust-unbounded-allocation
+    languages: [rust]
+    severity: WARNING
+    message: >
+      Vec::with_capacity() called with potentially user-controlled size.
+      An attacker can trigger OOM by providing a very large value. Enforce
+      a maximum size limit before allocation.
+    metadata:
+      confidence: LOW
+      category: security
+    patterns:
+      - pattern: Vec::with_capacity($SIZE)
+      - pattern-inside: |
+          pub async fn $FN(...) -> $RET {
+            ...
+          }
+
+  # Unbounded tokio::spawn — no semaphore or backpressure
+  - id: rust-unbounded-spawn
+    languages: [rust]
+    severity: WARNING
+    message: >
+      tokio::spawn() called in a loop without concurrency limits. If the
+      iteration count is user-controlled, this causes memory exhaustion.
+      Use a Semaphore or JoinSet with bounded concurrency.
+    metadata:
+      confidence: LOW
+      category: security
+    patterns:
+      - pattern: |
+          for $ITEM in $ITER {
+            ...
+            tokio::spawn(...)
+            ...
+          }

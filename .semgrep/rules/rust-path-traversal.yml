@@ -1,0 +1,41 @@
+rules:
+  # NOTE: Taint-based rule removed — Semgrep cannot parse web::Query<$TYPE>
+  # as a Rust taint source. Pattern-based rules below provide coverage.
+
+  # Pattern: fs operations on struct field access (catches query.path, etc.)
+  - id: rust-path-traversal-struct-field
+    languages: [rust]
+    severity: ERROR
+    message: >
+      File system operation uses a struct field that may be user-controlled.
+      This allows path traversal attacks (../../etc/passwd). Canonicalize
+      the path and verify it stays within the allowed directory.
+    metadata:
+      confidence: MEDIUM
+      category: security
+    pattern-either:
+      - pattern: std::fs::read_to_string(&$OBJ.$FIELD)
+      - pattern: std::fs::read(&$OBJ.$FIELD)
+      - pattern: std::fs::write(&$OBJ.$FIELD, ...)
+      - pattern: std::fs::remove_file(&$OBJ.$FIELD)
+      - pattern: std::fs::remove_dir_all(&$OBJ.$FIELD)
+      - pattern: std::fs::File::open(&$OBJ.$FIELD)
+      - pattern: std::fs::File::create(&$OBJ.$FIELD)
+      - pattern: std::fs::copy(&$OBJ.$FIELD, ...)
+      - pattern: std::fs::copy(..., &$OBJ.$FIELD)
+      - pattern: tokio::fs::read_to_string(&$OBJ.$FIELD)
+
+  # Dangerous filesystem operations — audit flag
+  - id: rust-fs-destructive-operations
+    languages: [rust]
+    severity: WARNING
+    message: >
+      Destructive filesystem operation detected. Ensure the path is
+      validated and not user-controlled. remove_dir_all() is especially
+      dangerous as it recursively deletes all contents.
+    metadata:
+      confidence: LOW
+      category: security
+    pattern-either:
+      - pattern: std::fs::remove_dir_all(...)
+      - pattern: std::fs::set_permissions(...)

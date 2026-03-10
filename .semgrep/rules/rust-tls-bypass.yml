@@ -1,0 +1,40 @@
+rules:
+  - id: rust-tls-accept-invalid-certs
+    languages: [rust]
+    severity: ERROR
+    message: >
+      TLS certificate verification is disabled. This allows man-in-the-middle
+      attacks. Remove danger_accept_invalid_certs(true). If you need a custom
+      CA, use add_root_certificate() instead.
+    metadata:
+      confidence: HIGH
+      category: security
+    pattern-either:
+      - pattern: $BUILDER.danger_accept_invalid_certs(true)
+      - pattern: reqwest::Client::builder().danger_accept_invalid_certs(true)
+
+  - id: rust-tls-accept-invalid-hostnames
+    languages: [rust]
+    severity: ERROR
+    message: >
+      TLS hostname verification is disabled. This allows connections to
+      servers with mismatched certificates. Remove
+      danger_accept_invalid_hostnames(true).
+    metadata:
+      confidence: HIGH
+      category: security
+    pattern-either:
+      - pattern: $BUILDER.danger_accept_invalid_hostnames(true)
+      - pattern: reqwest::Client::builder().danger_accept_invalid_hostnames(true)
+
+  # native-tls bypass
+  - id: rust-tls-native-bypass
+    languages: [rust]
+    severity: ERROR
+    message: >
+      TLS certificate verification disabled via native-tls. This allows
+      man-in-the-middle attacks.
+    metadata:
+      confidence: HIGH
+      category: security
+    pattern: $BUILDER.danger_accept_invalid_certs(true)

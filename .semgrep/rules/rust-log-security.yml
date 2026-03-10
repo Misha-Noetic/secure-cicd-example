@@ -1,0 +1,74 @@
+rules:
+  # Cleartext logging of sensitive data — keyword match in log format strings
+  - id: rust-cleartext-logging-password
+    languages: [rust]
+    severity: ERROR
+    message: >
+      Sensitive data (password) appears in log output. Never log
+      passwords, tokens, secrets, or API keys. Mask or redact sensitive
+      fields before logging.
+    metadata:
+      confidence: HIGH
+      category: security
+    pattern-regex: 'log::(info|debug|warn|error|trace)!\s*\([^)]*(?i)password'
+
+  - id: rust-cleartext-logging-secret
+    languages: [rust]
+    severity: ERROR
+    message: >
+      Sensitive data (secret/token/key) appears in log output. Never log
+      secrets, tokens, or API keys.
+    metadata:
+      confidence: MEDIUM
+      category: security
+    pattern-regex: 'log::(info|debug|warn|error|trace)!\s*\([^)]*(?i)(secret|token|api.key|credential|bearer|authorization)'
+
+  # Same for tracing crate
+  - id: rust-cleartext-logging-tracing
+    languages: [rust]
+    severity: ERROR
+    message: >
+      Sensitive data appears in tracing output. Never log passwords,
+      tokens, secrets, or API keys.
+    metadata:
+      confidence: MEDIUM
+      category: security
+    pattern-regex: 'tracing::(info|debug|warn|error|trace)!\s*\([^)]*(?i)(password|secret|token|api.key|credential)'
+
+  # println/eprintln with sensitive data
+  - id: rust-cleartext-println-sensitive
+    languages: [rust]
+    severity: WARNING
+    message: >
+      Sensitive data appears in println/eprintln output. Use structured
+      logging instead and never log secrets.
+    metadata:
+      confidence: MEDIUM
+      category: security
+    pattern-regex: '(println|eprintln)!\s*\([^)]*(?i)(password|secret|token|api.key|credential)'
+
+  # NOTE: Log injection taint rule removed — Semgrep cannot parse
+  # web::Query<$TYPE> as a Rust taint source. Pattern fallback below.
+
+  # Log injection — pattern-based: user input in log macros inside web handlers
+  - id: rust-log-injection-pattern
+    languages: [rust]
+    severity: WARNING
+    message: >
+      User input is logged without sanitization. An attacker may inject
+      newlines to forge log entries or flood logs. Sanitize user input
+      by replacing newline characters before logging, or use structured
+      logging with typed fields.
+    metadata:
+      confidence: MEDIUM
+      category: security
+    patterns:
+      - pattern-either:
+          - pattern: log::info!($FMT, ..., $QUERY.$FIELD, ...)
+          - pattern: log::debug!($FMT, ..., $QUERY.$FIELD, ...)
+          - pattern: log::warn!($FMT, ..., $QUERY.$FIELD, ...)
+          - pattern: log::error!($FMT, ..., $QUERY.$FIELD, ...)
+      - pattern-inside: |
+          pub async fn $FN(...) -> $RET {
+            ...
+          }

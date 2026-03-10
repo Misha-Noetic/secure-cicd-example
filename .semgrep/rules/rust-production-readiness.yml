@@ -1,0 +1,42 @@
+rules:
+  # todo!() and unimplemented!() left in code
+  - id: rust-todo-in-code
+    languages: [rust]
+    severity: ERROR
+    message: >
+      todo!() macro found. This panics at runtime and must not be present
+      in production code. Implement the missing functionality or remove
+      the endpoint.
+    metadata:
+      confidence: HIGH
+      category: security
+    pattern: todo!(...)
+
+  - id: rust-unimplemented-in-code
+    languages: [rust]
+    severity: ERROR
+    message: >
+      unimplemented!() macro found. This panics at runtime and must not
+      be present in production code.
+    metadata:
+      confidence: HIGH
+      category: security
+    pattern: unimplemented!(...)
+
+  # .unwrap() inside async web handler — can crash the server
+  - id: rust-unwrap-in-handler
+    languages: [rust]
+    severity: WARNING
+    message: >
+      .unwrap() used in a web handler. This panics on None/Err values
+      and will crash the request handler. Use the ? operator or
+      match/if-let for proper error handling.
+    metadata:
+      confidence: LOW
+      category: security
+    patterns:
+      - pattern: $EXPR.unwrap()
+      - pattern-inside: |
+          pub async fn $FN(...) -> impl Responder {
+            ...
+          }

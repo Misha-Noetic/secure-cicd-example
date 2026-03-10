@@ -1,0 +1,43 @@
+rules:
+  # Insecure JWT decode — skips signature verification
+  - id: rust-jwt-insecure-decode
+    languages: [rust]
+    severity: ERROR
+    message: >
+      dangerous_insecure_decode() skips JWT signature verification. An
+      attacker can forge tokens with arbitrary claims. Use decode() with
+      proper key and validation instead.
+    metadata:
+      confidence: HIGH
+      category: security
+    pattern-either:
+      - pattern: jsonwebtoken::dangerous_insecure_decode(...)
+      - pattern: jsonwebtoken::dangerous_insecure_decode::<$TYPE>(...)
+      - pattern: dangerous_insecure_decode(...)
+      - pattern: dangerous_insecure_decode::<$TYPE>(...)
+
+  # Disabled expiration validation
+  - id: rust-jwt-disabled-exp
+    languages: [rust]
+    severity: ERROR
+    message: >
+      JWT expiration validation is disabled. This allows expired tokens
+      to be accepted indefinitely. Keep validate_exp set to true (the
+      default).
+    metadata:
+      confidence: HIGH
+      category: security
+    pattern: $VALIDATION.validate_exp = false
+
+  # Disabled signature validation
+  - id: rust-jwt-insecure-validation
+    languages: [rust]
+    severity: ERROR
+    message: >
+      JWT signature requirement is disabled. This allows unsigned tokens
+      to be accepted. Keep required_spec_claims and insecure settings at
+      their secure defaults.
+    metadata:
+      confidence: HIGH
+      category: security
+    pattern: $VALIDATION.insecure_disable_signature_validation()
