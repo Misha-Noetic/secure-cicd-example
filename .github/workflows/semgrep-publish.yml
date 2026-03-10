@@ -1,0 +1,37 @@
+name: Publish Semgrep Rules
+
+# Publishes custom rules from .semgrep/rules/ to the Semgrep private registry
+# whenever they change on main. This keeps the platform in sync with the repo.
+# Future: move this workflow + rules to a dedicated rules-only repo.
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.semgrep/rules/**'
+
+  # Allow manual trigger for initial publish or re-sync
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  publish:
+    name: Publish Private Semgrep Rules
+    runs-on: ubuntu-latest
+    container:
+      image: semgrep/semgrep
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Publish rules to Semgrep registry
+        run: |
+          echo "Publishing custom rules to Semgrep private registry..."
+          semgrep publish --visibility=org_private .semgrep/rules/
+          echo "Done — rules are now available in the Semgrep AppSec Platform."
+          echo "Remember to add new rules to Policies (Block mode) in the platform UI."
+        env:
+          SEMGREP_APP_TOKEN: ${{ secrets.SEMGREP_APP_TOKEN }}
