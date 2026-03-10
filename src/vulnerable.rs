@@ -108,7 +108,30 @@ pub async fn greet_user(query: web::Query<SearchQuery>) -> impl Responder {
 #[get("/file")]
 pub async fn read_file(query: web::Query<FileQuery>) -> impl Responder {
     // BAD: User-controlled path used directly in file read
-    match std::fs::read_to_string(&query.path) {
+use std::path::{Path, PathBuf};
+
+const BASE_DIR: &str = "/safe/files"; // Restrict access to this safe directory
+
+#[get("/file")]
+pub async fn read_file(query: web::Query<FileQuery>) -> impl Responder {
+    // Securely join the base directory and the user-supplied path
+    let full_path = Path::new(BASE_DIR).join(&query.path);
+    // Canonicalize to eliminate ../ etc.
+    let result = full_path.canonicalize();
+    match result {
+        Ok(canon_path) => {
+            // Make sure the canonical path is still within BASE_DIR
+            if !canon_path.starts_with(BASE_DIR) {
+                return HttpResponse::BadRequest().body("Invalid path");
+            }
+            match std::fs::read_to_string(&canon_path) {
+                Ok(contents) => HttpResponse::Ok().body(contents),
+                Err(e) => HttpResponse::NotFound().body(format!("Error: {}", e)),
+            }
+        }
+        Err(e) => HttpResponse::BadRequest().body(format!("Invalid path: {}", e)),
+    }
+}
         Ok(contents) => HttpResponse::Ok().body(contents),
         Err(e) => HttpResponse::NotFound().body(format!("Error: {}", e)),
     }
