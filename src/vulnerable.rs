@@ -248,7 +248,24 @@ pub async fn hash_password(query: web::Query<UserData>) -> impl Responder {
     use md5::Md5;
     use md5::digest::Digest;
     // BAD: MD5 used to hash a password — trivially crackable
-    let mut hasher = Md5::new();
+#[get("/hash-password")]
+pub async fn hash_password(query: web::Query<UserData>) -> impl Responder {
+    // Use Argon2 for password hashing instead of MD5
+    use argon2::{Argon2, PasswordHasher, SaltString};
+    use rand_core::OsRng;
+    // Generate a random salt
+    let salt = SaltString::generate(&mut OsRng);
+    let argon2 = Argon2::default();
+    // Hash the password with Argon2
+    let password_hash = match argon2.hash_password(query.password.as_bytes(), &salt) {
+        Ok(hash) => hash.to_string(),
+        Err(_) => {
+            // If password hashing fails, return an error response.
+            return HttpResponse::InternalServerError().body("Could not hash password");
+        }
+    };
+    HttpResponse::Ok().body(format!("Hash: {}", password_hash))
+}
     hasher.update(query.password.as_bytes());
     let result = hasher.finalize();
     HttpResponse::Ok().body(format!("Hash: {:x}", result))
