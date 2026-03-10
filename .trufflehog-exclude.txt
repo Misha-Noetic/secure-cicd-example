@@ -4,3 +4,7 @@
 
 # Test config with intentional fake secrets (all rotated)
 src/config\.rs
+
+# Intentionally vulnerable test file for Semgrep rule validation
+# Contains hardcoded secret patterns that trigger Semgrep rules
+src/vulnerable\.rs
