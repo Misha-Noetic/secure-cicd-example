@@ -182,7 +182,7 @@ pub async fn send_report() -> impl Responder {
     let client = reqwest::Client::new();
     // BAD: Sending data over HTTP, not HTTPS — cleartext on the wire
     let _ = client
-        .post("http://analytics.noetic.net/api/report")
+        .post("https://analytics.noetic.net/api/report")
         .body("sensitive report data")
         .send()
         .await;
