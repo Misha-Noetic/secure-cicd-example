@@ -129,8 +129,8 @@ pub async fn logged_search(query: web::Query<SearchQuery>) -> impl Responder {
 // ─────────────────────────────────────────────────────────────────────────────
 #[get("/login")]
 pub async fn login(query: web::Query<UserData>) -> impl Responder {
-    // BAD: Password logged in cleartext
-    log::info!("Login attempt: user={} password={}", query.username, query.password);
+    // Log login attempt without including sensitive password data
+    log::info!("Login attempt for user={}", query.username);
     HttpResponse::Ok().body("Login processed")
 }
 
