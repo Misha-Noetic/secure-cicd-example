@@ -1,7 +1,6 @@
 use actix_web::{get, post, web, App, HttpResponse, HttpServer, Responder};
 use serde::{Deserialize, Serialize};
 
-mod config;
 mod vulnerable;
 
 #[derive(Serialize, Deserialize)]
