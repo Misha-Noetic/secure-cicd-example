@@ -1,0 +1,92 @@
+rules:
+  # vec![0; user_size] — allocation with potentially user-controlled size
+  - id: rust-uncontrolled-vec-repeat-alloc
+    languages: [rust]
+    severity: WARNING
+    message: >
+      vec![value; size] called with a potentially user-controlled size.
+      An attacker can trigger out-of-memory by providing a very large value.
+      Enforce a maximum size limit (e.g., cap at a few megabytes) before
+      allocating.
+    metadata:
+      confidence: MEDIUM
+      category: security
+      cwe:
+        - "CWE-789: Memory Allocation with Excessive Size Value"
+      owasp:
+        - "A06:2021 - Vulnerable and Outdated Components"
+      technology:
+        - rust
+      likelihood: MEDIUM
+      impact: HIGH
+      subcategory:
+        - vuln
+      references:
+        - https://cwe.mitre.org/data/definitions/789.html
+    patterns:
+      - pattern: vec![$VAL; $QUERY.$FIELD]
+      - pattern-inside: |
+          pub async fn $FN(...) -> $RET {
+            ...
+          }
+
+  # String::with_capacity(user_size)
+  - id: rust-uncontrolled-string-alloc
+    languages: [rust]
+    severity: WARNING
+    message: >
+      String::with_capacity() called with a potentially user-controlled
+      size inside a web handler. An attacker can trigger out-of-memory by
+      providing a very large value. Enforce a maximum size limit before
+      allocating.
+    metadata:
+      confidence: MEDIUM
+      category: security
+      cwe:
+        - "CWE-789: Memory Allocation with Excessive Size Value"
+      owasp:
+        - "A06:2021 - Vulnerable and Outdated Components"
+      technology:
+        - rust
+      likelihood: MEDIUM
+      impact: HIGH
+      subcategory:
+        - vuln
+      references:
+        - https://cwe.mitre.org/data/definitions/789.html
+    patterns:
+      - pattern: String::with_capacity($QUERY.$FIELD)
+      - pattern-inside: |
+          pub async fn $FN(...) -> $RET {
+            ...
+          }
+
+  # Vec::resize(user_size, ...) — grow vec to user-controlled size
+  - id: rust-uncontrolled-vec-resize
+    languages: [rust]
+    severity: WARNING
+    message: >
+      Vec::resize() called with a potentially user-controlled size inside
+      a web handler. An attacker can trigger out-of-memory by providing a
+      very large value. Enforce a maximum size limit before resizing.
+    metadata:
+      confidence: MEDIUM
+      category: security
+      cwe:
+        - "CWE-789: Memory Allocation with Excessive Size Value"
+      owasp:
+        - "A06:2021 - Vulnerable and Outdated Components"
+      technology:
+        - rust
+      likelihood: MEDIUM
+      impact: HIGH
+      subcategory:
+        - vuln
+      references:
+        - https://cwe.mitre.org/data/definitions/789.html
+    patterns:
+      - pattern: $VEC.resize($QUERY.$FIELD, ...)
+      - pattern-inside: |
+          pub async fn $FN(...) -> $RET {
+            ...
+          }
