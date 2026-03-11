@@ -8,10 +8,10 @@ on:
   schedule:
     - cron: '0 7 * * *'  # Every day at 7 AM UTC
 
-# Cancel in-progress runs when a new push arrives on the same branch
+# Cancel in-progress runs for PRs only — never cancel scheduled security scans
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
-  cancel-in-progress: true
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 permissions:
   contents: read
@@ -34,13 +34,15 @@ jobs:
           fetch-depth: 0  # Full history so TruffleHog can scan all commits
 
       # Skip scan if BASE and HEAD are identical (e.g. GitHub UI edits on PRs)
+      # Uses env: block to avoid direct expression interpolation in run:
       - name: Check for scannable commit range
         if: github.event_name == 'pull_request'
         id: commit-check
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
         run: |
-          BASE="${{ github.event.pull_request.base.sha }}"
-          HEAD="${{ github.event.pull_request.head.sha }}"
-          if [ "$BASE" = "$HEAD" ]; then
+          if [ "$BASE_SHA" = "$HEAD_SHA" ]; then
             echo "skip=true" >> "$GITHUB_OUTPUT"
             echo "BASE and HEAD are identical — nothing to scan."
           else
@@ -178,9 +180,11 @@ jobs:
           exit-code: 0
 
       # SARIF steps — only run on public repos (requires GitHub Advanced Security on private)
+      # Use always() — when the GATE step fails (vulnerabilities found), we still
+      # want SARIF uploaded so findings appear in the GitHub Security tab
       - name: Generate SARIF for GitHub Security tab
         uses: aquasecurity/trivy-action@57a97c7e7821a5776cebc9bb87c984fa69cba8f1  # 0.35.0
-        if: success() && github.repository_visibility == 'public'
+        if: always() && github.repository_visibility == 'public'
         with:
           image-ref: secure-api:${{ github.sha }}
           severity: CRITICAL,HIGH
@@ -230,8 +234,60 @@ jobs:
     needs: [trufflehog, trivy-fs, trivy-image]
 
     steps:
+      # Build the Slack payload with jq to prevent JSON injection from
+      # attacker-controlled values like branch names (github.ref_name)
+      - name: Build Slack payload
+        if: env.SLACK_WEBHOOK != ''
+        env:
+          SLACK_WEBHOOK: ${{ secrets.SLACK_SECURITY_WEBHOOK_URL }}
+          REPO: ${{ github.repository }}
+          BRANCH: ${{ github.ref_name }}
+          ACTOR: ${{ github.actor }}
+          EVENT: ${{ github.event_name }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+          TRUFFLEHOG_RESULT: ${{ needs.trufflehog.result }}
+          TRIVY_FS_RESULT: ${{ needs.trivy-fs.result }}
+          TRIVY_IMAGE_RESULT: ${{ needs.trivy-image.result }}
+        run: |
+          trufflehog_status="✅ Clean"
+          [ "$TRUFFLEHOG_RESULT" = "failure" ] && trufflehog_status="❌ Secrets found!"
+          trivy_fs_status="✅ Clean"
+          [ "$TRIVY_FS_RESULT" = "failure" ] && trivy_fs_status="❌ Fixable CVEs!"
+          trivy_image_status="✅ Clean"
+          [ "$TRIVY_IMAGE_RESULT" = "failure" ] && trivy_image_status="❌ Fixable CVEs!"
+          [ "$TRIVY_IMAGE_RESULT" = "skipped" ] && trivy_image_status="⏭️ Skipped (PR)"
+
+          jq -n \
+            --arg repo "$REPO" \
+            --arg branch "$BRANCH" \
+            --arg actor "$ACTOR" \
+            --arg event "$EVENT" \
+            --arg run_url "$RUN_URL" \
+            --arg th "$trufflehog_status" \
+            --arg tfs "$trivy_fs_status" \
+            --arg ti "$trivy_image_status" \
+            '{
+              text: "🚨 Security scan failed in *\($repo)*",
+              blocks: [
+                { type: "header", text: { type: "plain_text", text: "🚨 Security Scan Failed" } },
+                { type: "section", fields: [
+                    { type: "mrkdwn", text: "*Repository:*\n\($repo)" },
+                    { type: "mrkdwn", text: "*Branch:*\n\($branch)" },
+                    { type: "mrkdwn", text: "*Triggered by:*\n\($actor)" },
+                    { type: "mrkdwn", text: "*Event:*\n\($event)" }
+                ]},
+                { type: "section", fields: [
+                    { type: "mrkdwn", text: "*TruffleHog:*\n\($th)" },
+                    { type: "mrkdwn", text: "*Trivy FS:*\n\($tfs)" },
+                    { type: "mrkdwn", text: "*Trivy Image:*\n\($ti)" }
+                ]},
+                { type: "actions", elements: [
+                    { type: "button", text: { type: "plain_text", text: "View Workflow Run" }, url: $run_url }
+                ]}
+              ]
+            }' > /tmp/slack-payload.json
+
       - name: Send Slack notification
-        # Skip if the webhook secret isn't configured (secrets aren't available in job-level if)
         if: env.SLACK_WEBHOOK != ''
         uses: slackapi/slack-github-action@485a9d42d3a73031f12ec201c457e2162c45d02d  # v2.0.0
         env:
@@ -239,43 +295,4 @@ jobs:
         with:
           webhook: ${{ secrets.SLACK_SECURITY_WEBHOOK_URL }}
           webhook-type: incoming-webhook
-          payload: |
-            {
-              "text": "🚨 Security scan failed in *${{ github.repository }}*",
-              "blocks": [
-                {
-                  "type": "header",
-                  "text": {
-                    "type": "plain_text",
-                    "text": "🚨 Security Scan Failed"
-                  }
-                },
-                {
-                  "type": "section",
-                  "fields": [
-                    { "type": "mrkdwn", "text": "*Repository:*\n${{ github.repository }}" },
-                    { "type": "mrkdwn", "text": "*Branch:*\n${{ github.ref_name }}" },
-                    { "type": "mrkdwn", "text": "*Triggered by:*\n${{ github.actor }}" },
-                    { "type": "mrkdwn", "text": "*Event:*\n${{ github.event_name }}" }
-                  ]
-                },
-                {
-                  "type": "section",
-                  "fields": [
-                    { "type": "mrkdwn", "text": "*TruffleHog:*\n${{ needs.trufflehog.result == 'failure' && '❌ Secrets found!' || '✅ Clean' }}" },
-                    { "type": "mrkdwn", "text": "*Trivy FS:*\n${{ needs.trivy-fs.result == 'failure' && '❌ Fixable CVEs!' || '✅ Clean' }}" },
-                    { "type": "mrkdwn", "text": "*Trivy Image:*\n${{ needs.trivy-image.result == 'failure' && '❌ Fixable CVEs!' || needs.trivy-image.result == 'skipped' && '⏭️ Skipped (PR)' || '✅ Clean' }}" }
-                  ]
-                },
-                {
-                  "type": "actions",
-                  "elements": [
-                    {
-                      "type": "button",
-                      "text": { "type": "plain_text", "text": "View Workflow Run" },
-                      "url": "${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
-                    }
-                  ]
-                }
-              ]
-            }
+          payload-file-path: /tmp/slack-payload.json

@@ -8,10 +8,10 @@ on:
   schedule:
     - cron: '0 6 * * 1'  # Every Monday at 6 AM UTC
 
-# Cancel in-progress runs when a new push arrives on the same branch
+# Cancel in-progress runs for PRs only — never cancel scheduled scans
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
-  cancel-in-progress: true
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 permissions:
   contents: read
@@ -48,20 +48,28 @@ jobs:
       # Runs repo-specific Rust security rules from .semgrep/rules/.
       # Outputs SARIF for the GitHub Security tab. Also blocks on findings.
       # Runs even if step 1 fails.
+      # Exit 0 = no findings, exit 1 = findings (expected for vulnerable.rs),
+      # exit >1 = crash/config error. Tolerate 0 and 1; fail on crashes.
       - name: Run Semgrep (custom rules — SARIF for Security tab)
         if: always() && github.actor != 'dependabot[bot]'
         run: |
-          echo "Generating SARIF for GitHub Security tab (enforcement via platform scan above)"
-          semgrep scan --config .semgrep/rules/ --sarif -o semgrep-custom.sarif || true
+          set +e
+          semgrep scan --metrics=off --config .semgrep/rules/ --sarif -o semgrep-custom.sarif; rc=$?
+          set -e
+          if [ $rc -gt 1 ]; then echo "Semgrep error (exit $rc)"; exit $rc; fi
 
       # ── Standalone fallback (no platform token) ──
       # Uses public rulesets + local custom rules when SEMGREP_APP_TOKEN is not
       # set (e.g. forks, first-time setup). Outputs SARIF for GitHub Security tab.
+      # NOTE: Uses `semgrep scan` (not `semgrep ci`) because `semgrep ci` requires
+      # a platform token and does not support --sarif / -o flags.
       - name: Run Semgrep (standalone fallback)
         if: env.SEMGREP_APP_TOKEN == ''
         run: |
-          echo "Running standalone (no platform token — using default + Rust + custom rulesets)"
-          semgrep ci --config auto --config p/rust --config .semgrep/rules/ --sarif -o semgrep-results.sarif || true
+          set +e
+          semgrep scan --metrics=off --config auto --config p/rust --config .semgrep/rules/ --sarif -o semgrep-results.sarif; rc=$?
+          set -e
+          if [ $rc -gt 1 ]; then echo "Semgrep error (exit $rc)"; exit $rc; fi
         env:
           SEMGREP_APP_TOKEN: ${{ secrets.SEMGREP_APP_TOKEN }}
 

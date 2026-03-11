@@ -1,4 +1,5 @@
 rules:
+  # Covers both reqwest and native-tls — danger_accept_invalid_certs(true)
   - id: rust-tls-accept-invalid-certs
     languages: [rust]
     severity: ERROR
@@ -16,15 +17,14 @@ rules:
       technology:
         - rust
         - reqwest
+        - native-tls
       likelihood: HIGH
       impact: HIGH
       subcategory:
         - vuln
       references:
         - https://owasp.org/Top10/A07_2021-Identification_and_Authentication_Failures/
-    pattern-either:
-      - pattern: $BUILDER.danger_accept_invalid_certs(true)
-      - pattern: reqwest::Client::builder().danger_accept_invalid_certs(true)
+    pattern: $BUILDER.danger_accept_invalid_certs(true)
 
   - id: rust-tls-accept-invalid-hostnames
     languages: [rust]
@@ -49,32 +49,4 @@ rules:
         - vuln
       references:
         - https://owasp.org/Top10/A07_2021-Identification_and_Authentication_Failures/
-    pattern-either:
-      - pattern: $BUILDER.danger_accept_invalid_hostnames(true)
-      - pattern: reqwest::Client::builder().danger_accept_invalid_hostnames(true)
-
-  # native-tls bypass
-  - id: rust-tls-native-bypass
-    languages: [rust]
-    severity: ERROR
-    message: >
-      TLS certificate verification disabled via native-tls. This allows
-      man-in-the-middle attacks. Remove danger_accept_invalid_certs(true)
-      and use proper certificate validation.
-    metadata:
-      confidence: HIGH
-      category: security
-      cwe:
-        - "CWE-295: Improper Certificate Validation"
-      owasp:
-        - "A07:2021 - Identification and Authentication Failures"
-      technology:
-        - rust
-        - native-tls
-      likelihood: HIGH
-      impact: HIGH
-      subcategory:
-        - vuln
-      references:
-        - https://owasp.org/Top10/A07_2021-Identification_and_Authentication_Failures/
-    pattern: $BUILDER.danger_accept_invalid_certs(true)
+    pattern: $BUILDER.danger_accept_invalid_hostnames(true)
