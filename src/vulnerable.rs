@@ -125,7 +125,7 @@ pub fn vuln_sql_diesel(term: &str) {
 
 /// Triggers: rust-sql-injection-sqlx
 pub fn vuln_sql_sqlx(term: &str) {
-    sqlx::query(&format!(
+    let _q: sqlx::query::Query<'_, sqlx::Sqlite, _> = sqlx::query(&format!(
         "SELECT * FROM users WHERE name = '{}'",
         term
     ));
