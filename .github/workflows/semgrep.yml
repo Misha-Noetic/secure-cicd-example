@@ -48,11 +48,13 @@ jobs:
       # Runs repo-specific Rust security rules from .semgrep/rules/.
       # Outputs SARIF for the GitHub Security tab. Also blocks on findings.
       # Runs even if step 1 fails.
+      # Exit 0 = no findings, exit 1 = findings (expected for vulnerable.rs),
+      # exit >1 = crash/config error. Tolerate 0 and 1; fail on crashes.
       - name: Run Semgrep (custom rules — SARIF for Security tab)
         if: always() && github.actor != 'dependabot[bot]'
         run: |
-          echo "Generating SARIF for GitHub Security tab (enforcement via platform scan above)"
-          semgrep scan --config .semgrep/rules/ --sarif -o semgrep-custom.sarif
+          semgrep scan --config .semgrep/rules/ --sarif -o semgrep-custom.sarif; rc=$?
+          if [ $rc -gt 1 ]; then echo "Semgrep error (exit $rc)"; exit $rc; fi
 
       # ── Standalone fallback (no platform token) ──
       # Uses public rulesets + local custom rules when SEMGREP_APP_TOKEN is not
@@ -62,8 +64,8 @@ jobs:
       - name: Run Semgrep (standalone fallback)
         if: env.SEMGREP_APP_TOKEN == ''
         run: |
-          echo "Running standalone (no platform token — using default + Rust + custom rulesets)"
-          semgrep scan --config auto --config p/rust --config .semgrep/rules/ --sarif -o semgrep-results.sarif
+          semgrep scan --config auto --config p/rust --config .semgrep/rules/ --sarif -o semgrep-results.sarif; rc=$?
+          if [ $rc -gt 1 ]; then echo "Semgrep error (exit $rc)"; exit $rc; fi
         env:
           SEMGREP_APP_TOKEN: ${{ secrets.SEMGREP_APP_TOKEN }}
 
