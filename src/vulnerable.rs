@@ -234,20 +234,19 @@ pub async fn fixed_ssrf_standalone(query: web::Query<UrlQuery>) -> impl Responde
 // =============================================================================
 
 /// Secure fix for: rust-path-traversal-struct-field
-/// Extracts only the filename (no path separators), joins with static base dir.
-/// User input never flows into std::fs — only the validated filename does.
+/// Maps user input to a static filename via allowlist — user input never reaches
+/// any Path or filesystem API. This completely breaks the taint chain.
 /// Uses tokio::fs for non-blocking I/O in async context.
 pub async fn fixed_path_traversal(query: web::Query<FileQuery>) -> impl Responder {
-    // Extract only the filename component — reject any path separators
-    let filename = std::path::Path::new(&query.path)
-        .file_name()
-        .and_then(|f| f.to_str());
-    let filename = match filename {
-        Some(f) if !f.contains("..") => f,
-        _ => return HttpResponse::BadRequest().body("Invalid filename"),
+    // Map user input to a known-safe static filename — breaks taint chain completely
+    let safe_filename: &str = match query.path.as_str() {
+        "readme.txt" => "readme.txt",
+        "config.json" => "config.json",
+        "data.csv" => "data.csv",
+        _ => return HttpResponse::BadRequest().body("File not in allowlist"),
     };
-    // Build safe path from static base dir + validated filename
-    let safe_path = std::path::Path::new(ALLOWED_BASE_DIR).join(filename);
+    // Build path from static base dir + static filename — no user input flows here
+    let safe_path = std::path::Path::new(ALLOWED_BASE_DIR).join(safe_filename);
     let content = tokio::fs::read_to_string(&safe_path)
         .await
         .unwrap_or_default();
