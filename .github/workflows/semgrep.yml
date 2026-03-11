@@ -54,7 +54,7 @@ jobs:
         if: always() && github.actor != 'dependabot[bot]'
         run: |
           set +e
-          semgrep scan --config .semgrep/rules/ --sarif -o semgrep-custom.sarif; rc=$?
+          semgrep scan --metrics=off --config .semgrep/rules/ --sarif -o semgrep-custom.sarif; rc=$?
           set -e
           if [ $rc -gt 1 ]; then echo "Semgrep error (exit $rc)"; exit $rc; fi
 
@@ -67,7 +67,7 @@ jobs:
         if: env.SEMGREP_APP_TOKEN == ''
         run: |
           set +e
-          semgrep scan --config auto --config p/rust --config .semgrep/rules/ --sarif -o semgrep-results.sarif; rc=$?
+          semgrep scan --metrics=off --config auto --config p/rust --config .semgrep/rules/ --sarif -o semgrep-results.sarif; rc=$?
           set -e
           if [ $rc -gt 1 ]; then echo "Semgrep error (exit $rc)"; exit $rc; fi
         env:
