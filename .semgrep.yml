@@ -1,0 +1,11 @@
+# Root Semgrep configuration — path exclusions for local scans
+# This file is used by `semgrep scan --config .semgrep/rules/` runs.
+# The CI pipeline uses its own --config flags (see .github/workflows/semgrep.yml).
+
+paths:
+  exclude:
+    - target/
+    - vendor/
+    - tests/fixtures/
+    - "*.lock"
+    - node_modules/

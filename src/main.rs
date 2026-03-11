@@ -91,4 +91,18 @@ mod tests {
         let resp = test::call_service(&app, req).await;
         assert!(resp.status().is_success());
     }
+
+    #[actix_web::test]
+    async fn test_create_item() {
+        let app = test::init_service(App::new().service(create_item)).await;
+        let req = test::TestRequest::post()
+            .uri("/items")
+            .set_json(serde_json::json!({
+                "name": "Test Item",
+                "description": "A test item"
+            }))
+            .to_request();
+        let resp = test::call_service(&app, req).await;
+        assert_eq!(resp.status(), actix_web::http::StatusCode::CREATED);
+    }
 }

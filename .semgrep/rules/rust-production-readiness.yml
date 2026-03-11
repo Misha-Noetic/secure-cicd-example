@@ -18,6 +18,8 @@ rules:
       impact: HIGH
       subcategory:
         - audit
+      references:
+        - https://owasp.org/www-community/vulnerabilities/Poor_Error_Handling
     pattern: todo!(...)
 
   - id: rust-unimplemented-in-code
@@ -25,7 +27,8 @@ rules:
     severity: ERROR
     message: >
       unimplemented!() macro found. This panics at runtime and must not
-      be present in production code.
+      be present in production code. Implement the missing functionality
+      or return an appropriate error.
     metadata:
       confidence: HIGH
       category: security
@@ -37,6 +40,8 @@ rules:
       impact: HIGH
       subcategory:
         - audit
+      references:
+        - https://owasp.org/www-community/vulnerabilities/Poor_Error_Handling
     pattern: unimplemented!(...)
 
   # .unwrap() inside async web handler — can crash the server
@@ -59,9 +64,20 @@ rules:
       impact: MEDIUM
       subcategory:
         - audit
+      references:
+        - https://owasp.org/www-community/vulnerabilities/Poor_Error_Handling
     patterns:
       - pattern: $EXPR.unwrap()
-      - pattern-inside: |
-          pub async fn $FN(...) -> impl Responder {
-            ...
-          }
+      - pattern-either:
+          - pattern-inside: |
+              pub async fn $FN(...) -> impl Responder {
+                ...
+              }
+          - pattern-inside: |
+              pub async fn $FN(...) -> HttpResponse {
+                ...
+              }
+          - pattern-inside: |
+              pub async fn $FN(...) -> Result<HttpResponse, $ERR> {
+                ...
+              }

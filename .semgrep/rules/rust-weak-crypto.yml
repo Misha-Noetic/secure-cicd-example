@@ -47,6 +47,8 @@ rules:
       impact: MEDIUM
       subcategory:
         - vuln
+      references:
+        - https://owasp.org/Top10/A02_2021-Cryptographic_Failures/
     pattern-either:
       - pattern: sha1::Sha1::new(...)
       - pattern: Sha1::new(...)
@@ -57,7 +59,8 @@ rules:
     severity: ERROR
     message: >
       MD2/MD4 are cryptographically broken. Do not use for any security
-      purpose.
+      purpose. Use SHA-256 or SHA-3 for integrity checks, argon2/bcrypt
+      for password hashing.
     metadata:
       confidence: HIGH
       category: security
@@ -71,6 +74,8 @@ rules:
       impact: MEDIUM
       subcategory:
         - vuln
+      references:
+        - https://owasp.org/Top10/A02_2021-Cryptographic_Failures/
     pattern-either:
       - pattern: md2::Md2::new(...)
       - pattern: Md2::new(...)
@@ -98,6 +103,8 @@ rules:
       impact: MEDIUM
       subcategory:
         - audit
+      references:
+        - https://owasp.org/Top10/A02_2021-Cryptographic_Failures/
     patterns:
       - pattern-either:
           - pattern: $SECRET == $INPUT
@@ -105,3 +112,6 @@ rules:
       - metavariable-regex:
           metavariable: $SECRET
           regex: "(?i).*(secret|token|key|password|api_key|auth|hash|hmac|digest).*"
+      # Exclude safe comparisons against string literals
+      - pattern-not: $SECRET == "..."
+      - pattern-not: "..." == $SECRET

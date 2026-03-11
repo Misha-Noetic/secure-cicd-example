@@ -10,6 +10,12 @@ serde = { version = "1", features = ["derive"] }
 serde_json = "1"
 tokio = { version = "1", features = ["full"] }
 
-# INTENTIONALLY VULNERABLE — pinned to old version for demo purposes
-# regex 1.5.4 has CVE-2022-24713 (ReDoS), fixed in 1.5.5+
+# regex 1.5.5 — the fix for CVE-2022-24713 (ReDoS in 1.5.4). Kept at minimum
+# fixed version to demonstrate that cargo-audit and Trivy FS scans detect
+# vulnerable transitive dependencies.
 regex = "1.5.5"
+
+# NOTE: src/vulnerable.rs imports additional crates (rusqlite, diesel, reqwest,
+# etc.) that are NOT listed here. That file is an orphan module — not wired into
+# the crate via mod statements — so rustc never compiles it. It exists solely as
+# a Semgrep scan target to exercise our custom rules.

@@ -1,0 +1,29 @@
+rules:
+  - id: rust-expect-in-async-handler
+    languages: [rust]
+    severity: WARNING
+    message: >
+      .expect() in an async handler will panic and crash the server on failure.
+      Use proper error handling with ? operator, .unwrap_or_default(), or
+      return an error response instead.
+    metadata:
+      confidence: HIGH
+      category: security
+      cwe:
+        - "CWE-248: Uncaught Exception"
+      owasp:
+        - "A04:2021 - Insecure Design"
+      technology:
+        - rust
+      likelihood: HIGH
+      impact: HIGH
+      subcategory:
+        - vuln
+      references:
+        - https://doc.rust-lang.org/book/ch09-00-error-handling.html
+    patterns:
+      - pattern: $EXPR.expect(...)
+      - pattern-inside: |
+          pub async fn $FN(...) -> $RET {
+            ...
+          }

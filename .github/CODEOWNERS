@@ -1,0 +1,6 @@
+# Security workflows and configs require security team review
+.github/workflows/       @Misha-Noetic
+.semgrep/                @Misha-Noetic
+.trufflehog*             @Misha-Noetic
+.trivyignore             @Misha-Noetic
+Dockerfile               @Misha-Noetic

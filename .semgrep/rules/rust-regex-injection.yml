@@ -38,7 +38,8 @@ rules:
     severity: ERROR
     message: >
       A variable is used to build a RegexSet. If user-controlled, this
-      allows regex injection and ReDoS attacks.
+      allows regex injection and ReDoS attacks. Use regex::escape() to
+      sanitize user input before compiling.
     metadata:
       confidence: MEDIUM
       category: security
@@ -53,6 +54,8 @@ rules:
       impact: MEDIUM
       subcategory:
         - vuln
+      references:
+        - https://owasp.org/Top10/A03_2021-Injection/
     patterns:
       - pattern-either:
           - pattern: regex::RegexSet::new(&$VAR)

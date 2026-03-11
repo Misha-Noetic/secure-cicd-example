@@ -9,7 +9,10 @@ rules:
     message: >
       File system operation uses a struct field that may be user-controlled.
       This allows path traversal attacks (../../etc/passwd). Canonicalize
-      the path and verify it stays within the allowed directory.
+      the path using std::fs::canonicalize() and verify it starts with the
+      expected base directory before proceeding. Example:
+      let canonical = std::fs::canonicalize(&path)?;
+      if !canonical.starts_with(&allowed_base) { return Err("path traversal"); }
     metadata:
       confidence: MEDIUM
       category: security
@@ -43,8 +46,10 @@ rules:
     severity: WARNING
     message: >
       Destructive filesystem operation detected. Ensure the path is
-      validated and not user-controlled. remove_dir_all() is especially
-      dangerous as it recursively deletes all contents.
+      validated and not user-controlled. Canonicalize the path using
+      std::fs::canonicalize() and verify it starts with the expected
+      base directory. remove_dir_all() is especially dangerous as it
+      recursively deletes all contents.
     metadata:
       confidence: LOW
       category: security
@@ -58,6 +63,8 @@ rules:
       impact: HIGH
       subcategory:
         - audit
+      references:
+        - https://owasp.org/Top10/A01_2021-Broken_Access_Control/
     pattern-either:
       - pattern: std::fs::remove_dir_all(...)
       - pattern: std::fs::set_permissions(...)

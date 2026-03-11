@@ -46,6 +46,8 @@ rules:
       impact: MEDIUM
       subcategory:
         - vuln
+      references:
+        - https://owasp.org/Top10/A05_2021-Security_Misconfiguration/
     pattern: $CORS.allowed_origin("*")
 
   # NOTE: Open redirect taint rule removed — Semgrep cannot parse
@@ -72,6 +74,8 @@ rules:
       impact: MEDIUM
       subcategory:
         - audit
+      references:
+        - https://owasp.org/Top10/A01_2021-Broken_Access_Control/
     patterns:
       - pattern-either:
           - pattern: |
@@ -111,6 +115,8 @@ rules:
       impact: LOW
       subcategory:
         - vuln
+      references:
+        - https://owasp.org/Top10/A04_2021-Insecure_Design/
     pattern-either:
       - pattern: HttpResponse::InternalServerError().body(format!(...))
       - pattern: HttpResponse::BadGateway().body(format!(...))
