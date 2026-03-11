@@ -13,3 +13,23 @@ tokio = { version = "1", features = ["full"] }
 # INTENTIONALLY VULNERABLE — pinned to old version for demo purposes
 # regex 1.5.4 has CVE-2022-24713 (ReDoS), fixed in 1.5.5+
 regex = "1.5.5"
+
+# Dependencies for src/vulnerable.rs — intentionally vulnerable test module
+# These crates are used ONLY by the test file to validate Semgrep + CodeQL rules
+rusqlite = { version = "0.32", features = ["bundled"] }
+reqwest = { version = "0.12", features = ["json"] }
+jsonwebtoken = "9"
+md-5 = "0.10"
+sha1 = "0.10"
+md2 = "0.10"
+md4 = "0.10"
+digest = "0.10"
+serde_yaml = "0.9"
+bincode = "1"
+native-tls = "0.2"
+rand = { version = "0.8", features = ["small_rng"] }
+log = "0.4"
+tracing = "0.1"
+actix-cors = "0.7"
+diesel = { version = "2", features = ["sqlite"] }
+sqlx = { version = "0.8", features = ["runtime-tokio", "sqlite"] }
