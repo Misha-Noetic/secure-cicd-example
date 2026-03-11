@@ -1,12 +1,12 @@
 rules:
-  # Cookie without Secure flag — actix-web Cookie::build API
-  - id: rust-cookie-missing-secure
+  # Cookie::new() without builder — can't set Secure flag via chaining
+  - id: rust-cookie-new-audit
     languages: [rust]
     severity: WARNING
     message: >
-      Cookie created without Secure flag. Cookies should use .secure(true)
-      to prevent transmission over unencrypted connections, and .http_only(true)
-      to prevent JavaScript access.
+      Cookie::new() creates a cookie without security attributes. Use
+      Cookie::build() with .secure(true) and .http_only(true) instead, or
+      call .set_secure(true) on the returned cookie.
     metadata:
       confidence: MEDIUM
       category: security
@@ -16,19 +16,40 @@ rules:
         - "A05:2021 - Security Misconfiguration"
       technology:
         - rust
-        - actix-web
       likelihood: MEDIUM
       impact: MEDIUM
       subcategory:
         - audit
       references:
         - https://owasp.org/Top10/A05_2021-Security_Misconfiguration/
+    pattern: Cookie::new(...)
+
+  # Cookie::build() chain that calls .finish() without .secure(true)
+  - id: rust-cookie-build-missing-secure
+    languages: [rust]
+    severity: WARNING
+    message: >
+      Cookie built without .secure(true). Set .secure(true) to prevent
+      transmission over unencrypted connections, and .http_only(true) to
+      prevent JavaScript access.
+    metadata:
+      confidence: HIGH
+      category: security
+      cwe:
+        - "CWE-614: Sensitive Cookie in HTTPS Session Without 'Secure' Attribute"
+      owasp:
+        - "A05:2021 - Security Misconfiguration"
+      technology:
+        - rust
+      likelihood: MEDIUM
+      impact: MEDIUM
+      subcategory:
+        - vuln
+      references:
+        - https://owasp.org/Top10/A05_2021-Security_Misconfiguration/
     patterns:
-      - pattern-either:
-          - pattern: Cookie::new(...)
-          - pattern: Cookie::build(...)
-      - pattern-not-inside: |
-          $COOKIE.secure(true)
+      - pattern: Cookie::build(...). ... .finish()
+      - pattern-not: Cookie::build(...). ... .secure(true). ... .finish()
 
   # Cookie with SameSite None but no Secure flag
   - id: rust-cookie-samesite-none
@@ -53,6 +74,5 @@ rules:
       references:
         - https://owasp.org/Top10/A05_2021-Security_Misconfiguration/
     patterns:
-      - pattern: $COOKIE.same_site(SameSite::None)
-      - pattern-not-inside: |
-          $COOKIE.secure(true)
+      - pattern: $COOKIE. ... .same_site(SameSite::None). ... .finish()
+      - pattern-not: $COOKIE. ... .secure(true). ... .finish()
