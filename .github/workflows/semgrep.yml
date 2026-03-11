@@ -53,7 +53,9 @@ jobs:
       - name: Run Semgrep (custom rules — SARIF for Security tab)
         if: always() && github.actor != 'dependabot[bot]'
         run: |
+          set +e
           semgrep scan --config .semgrep/rules/ --sarif -o semgrep-custom.sarif; rc=$?
+          set -e
           if [ $rc -gt 1 ]; then echo "Semgrep error (exit $rc)"; exit $rc; fi
 
       # ── Standalone fallback (no platform token) ──
@@ -64,7 +66,9 @@ jobs:
       - name: Run Semgrep (standalone fallback)
         if: env.SEMGREP_APP_TOKEN == ''
         run: |
+          set +e
           semgrep scan --config auto --config p/rust --config .semgrep/rules/ --sarif -o semgrep-results.sarif; rc=$?
+          set -e
           if [ $rc -gt 1 ]; then echo "Semgrep error (exit $rc)"; exit $rc; fi
         env:
           SEMGREP_APP_TOKEN: ${{ secrets.SEMGREP_APP_TOKEN }}
