@@ -14,6 +14,10 @@ concurrency:
 env:
   CARGO_TERM_COLOR: always
 
+permissions:
+  contents: read
+  security-events: write  # Required for Clippy SARIF upload to Security tab
+
 jobs:
   build-and-test:
     name: Build & Test
@@ -39,11 +43,25 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-cargo-
 
+      - name: Install SARIF tools
+        run: cargo install clippy-sarif sarif-fmt
+
       - name: Check formatting
         run: cargo fmt --all -- --check
 
-      - name: Run Clippy (linter)
-        run: cargo clippy --all-targets --all-features -- -D warnings
+      - name: Run Clippy (linter + SARIF)
+        run: |
+          cargo clippy --all-targets --all-features --message-format=json \
+            | clippy-sarif | tee rust-clippy-results.sarif | sarif-fmt
+          # Re-run to get exit code (piped JSON above swallows it)
+          cargo clippy --all-targets --all-features -- -D warnings
+
+      - name: Upload Clippy SARIF to Security tab
+        if: always() && hashFiles('rust-clippy-results.sarif') != ''
+        uses: github/codeql-action/upload-sarif@v3
+        with:
+          sarif_file: rust-clippy-results.sarif
+          wait-for-processing: true
 
       - name: Build
         run: cargo build --release

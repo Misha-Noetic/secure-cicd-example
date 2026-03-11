@@ -58,7 +58,7 @@ async fn create_item(item: web::Json<CreateItem>) -> impl Responder {
 
 #[actix_web::main]
 async fn main() -> std::io::Result<()> {
-    println!("Starting server on http://127.0.0.1:8080");
+    println!("Starting server on 127.0.0.1:8080");
 
     HttpServer::new(|| {
         App::new()
