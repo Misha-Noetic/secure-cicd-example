@@ -34,6 +34,10 @@ rules:
               let $SQL = format!(...);
               ...
               $DB.prepare($SQL)
+      - pattern-not: |
+          let $SQL = format!("...");
+          ...
+          $DB.prepare(...)
 
   - id: rust-sql-injection-format-execute
     languages: [rust]
@@ -55,6 +59,8 @@ rules:
       impact: HIGH
       subcategory:
         - vuln
+      references:
+        - https://owasp.org/Top10/A03_2021-Injection/
     patterns:
       - pattern-either:
           - pattern: |
@@ -65,6 +71,10 @@ rules:
               let $SQL = format!(...);
               ...
               $DB.execute($SQL, ...)
+      - pattern-not: |
+          let $SQL = format!("...");
+          ...
+          $DB.execute(...)
 
   - id: rust-sql-injection-inline-prepare
     languages: [rust]
@@ -86,6 +96,8 @@ rules:
       impact: HIGH
       subcategory:
         - vuln
+      references:
+        - https://owasp.org/Top10/A03_2021-Injection/
     patterns:
       - pattern-either:
           - pattern: $DB.prepare(&format!(...))
@@ -113,6 +125,8 @@ rules:
       impact: HIGH
       subcategory:
         - vuln
+      references:
+        - https://owasp.org/Top10/A03_2021-Injection/
     patterns:
       - pattern-either:
           - pattern: diesel::sql_query(format!(...))
@@ -139,6 +153,8 @@ rules:
       impact: HIGH
       subcategory:
         - vuln
+      references:
+        - https://owasp.org/Top10/A03_2021-Injection/
     patterns:
       - pattern-either:
           - pattern: sqlx::query(&format!(...))

@@ -1,0 +1,27 @@
+rules:
+  - id: rust-path-traversal-join
+    languages: [rust]
+    severity: ERROR
+    message: >
+      Path::join() with potentially user-controlled input allows path traversal
+      attacks (../../etc/passwd). Validate that the joined path stays within
+      the expected base directory using std::fs::canonicalize().
+    metadata:
+      confidence: MEDIUM
+      category: security
+      cwe:
+        - "CWE-22: Improper Limitation of a Pathname to a Restricted Directory ('Path Traversal')"
+      owasp:
+        - "A01:2021 - Broken Access Control"
+      technology:
+        - rust
+      likelihood: HIGH
+      impact: HIGH
+      subcategory:
+        - audit
+      references:
+        - https://owasp.org/Top10/A01_2021-Broken_Access_Control/
+    pattern-either:
+      - pattern: $BASE.join(&$OBJ.$FIELD)
+      - pattern: $BASE.join($OBJ.$FIELD.as_str())
+      - pattern: std::path::Path::new(...).join(&$OBJ.$FIELD)

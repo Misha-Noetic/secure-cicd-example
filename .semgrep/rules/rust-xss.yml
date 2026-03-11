@@ -25,11 +25,11 @@ rules:
         - https://owasp.org/Top10/A03_2021-Injection/
     patterns:
       - pattern: |
-          let $HTML = format!(...);
+          let $VAR = format!(...);
           ...
           HttpResponse::Ok()
             .content_type("text/html")
-            .body($HTML)
+            .body($VAR)
 
   - id: rust-xss-format-html-inline
     languages: [rust]
@@ -51,6 +51,8 @@ rules:
       impact: MEDIUM
       subcategory:
         - vuln
+      references:
+        - https://owasp.org/Top10/A03_2021-Injection/
     pattern: |
       HttpResponse::Ok()
         .content_type("text/html")
@@ -78,6 +80,8 @@ rules:
       impact: MEDIUM
       subcategory:
         - audit
+      references:
+        - https://owasp.org/Top10/A03_2021-Injection/
     patterns:
       - pattern: |
           let $BODY = format!(...);

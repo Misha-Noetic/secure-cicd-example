@@ -1,0 +1,58 @@
+rules:
+  # Cookie without Secure flag — actix-web Cookie::build API
+  - id: rust-cookie-missing-secure
+    languages: [rust]
+    severity: WARNING
+    message: >
+      Cookie created without Secure flag. Cookies should use .secure(true)
+      to prevent transmission over unencrypted connections, and .http_only(true)
+      to prevent JavaScript access.
+    metadata:
+      confidence: MEDIUM
+      category: security
+      cwe:
+        - "CWE-614: Sensitive Cookie in HTTPS Session Without 'Secure' Attribute"
+      owasp:
+        - "A05:2021 - Security Misconfiguration"
+      technology:
+        - rust
+        - actix-web
+      likelihood: MEDIUM
+      impact: MEDIUM
+      subcategory:
+        - audit
+      references:
+        - https://owasp.org/Top10/A05_2021-Security_Misconfiguration/
+    patterns:
+      - pattern-either:
+          - pattern: Cookie::new(...)
+          - pattern: Cookie::build(...)
+      - pattern-not-inside: |
+          $COOKIE.secure(true)
+
+  # Cookie with SameSite None but no Secure flag
+  - id: rust-cookie-samesite-none
+    languages: [rust]
+    severity: WARNING
+    message: >
+      Cookie with SameSite=None must also set Secure flag. Browsers reject
+      SameSite=None cookies without Secure.
+    metadata:
+      confidence: HIGH
+      category: security
+      cwe:
+        - "CWE-1275: Sensitive Cookie with Improper SameSite Attribute"
+      owasp:
+        - "A05:2021 - Security Misconfiguration"
+      technology:
+        - rust
+      likelihood: HIGH
+      impact: MEDIUM
+      subcategory:
+        - vuln
+      references:
+        - https://owasp.org/Top10/A05_2021-Security_Misconfiguration/
+    patterns:
+      - pattern: $COOKIE.same_site(SameSite::None)
+      - pattern-not-inside: |
+          $COOKIE.secure(true)

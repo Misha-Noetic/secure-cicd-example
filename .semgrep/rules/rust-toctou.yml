@@ -19,6 +19,8 @@ rules:
       impact: MEDIUM
       subcategory:
         - audit
+      references:
+        - https://cwe.mitre.org/data/definitions/367.html
     pattern: |
       $PATH.exists();
       ...
@@ -41,6 +43,8 @@ rules:
       impact: MEDIUM
       subcategory:
         - audit
+      references:
+        - https://owasp.org/www-community/vulnerabilities/Time_of_check_to_time_of_use
     pattern: |
       $PATH.exists();
       ...
@@ -63,6 +67,8 @@ rules:
       impact: HIGH
       subcategory:
         - audit
+      references:
+        - https://owasp.org/www-community/vulnerabilities/Time_of_check_to_time_of_use
     pattern-either:
       - pattern: |
           $PATH.exists();
@@ -95,4 +101,6 @@ rules:
       impact: MEDIUM
       subcategory:
         - audit
-    pattern-regex: '\.exists\(\)\s*\{[\s\S]{0,300}std::fs::(read_to_string|read|write|File::open|File::create|remove_file|remove_dir_all)'
+      references:
+        - https://owasp.org/www-community/vulnerabilities/Time_of_check_to_time_of_use
+    pattern-regex: '\.exists\(\)\s*\{[\s\S]{0,1000}std::fs::(read_to_string|read|write|File::open|File::create|remove_file|remove_dir_all)'

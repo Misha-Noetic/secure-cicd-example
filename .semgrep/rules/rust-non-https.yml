@@ -20,4 +20,6 @@ rules:
         - audit
       references:
         - https://owasp.org/Top10/A02_2021-Cryptographic_Failures/
-    pattern-regex: '"http://[a-zA-Z0-9][^"]*"'
+    patterns:
+      - pattern-regex: '"http://[a-zA-Z0-9][^"]*"'
+      - pattern-not-regex: '"http://(localhost|127\.0\.0\.1|\[::1\])(:[0-9]+)?(/[^"]*)?\"'

@@ -22,7 +22,7 @@ rules:
         - vuln
       references:
         - https://owasp.org/Top10/A09_2021-Security_Logging_and_Monitoring_Failures/
-    pattern-regex: 'log::(info|debug|warn|error|trace)!\s*\([^)]*(?i)password'
+    pattern-regex: 'log::(info|debug|warn|error|trace)!\s*\([^)]*(?i)password[^)]*\{[^}]*\}'
 
   - id: rust-cleartext-logging-secret
     languages: [rust]
@@ -43,7 +43,9 @@ rules:
       impact: MEDIUM
       subcategory:
         - vuln
-    pattern-regex: 'log::(info|debug|warn|error|trace)!\s*\([^)]*(?i)(secret|token|api.key|credential|bearer|authorization)'
+      references:
+        - https://owasp.org/Top10/A09_2021-Security_Logging_and_Monitoring_Failures/
+    pattern-regex: 'log::(info|debug|warn|error|trace)!\s*\([^)]*(?i)(secret|token|api.key|credential|bearer|authorization)[^)]*\{[^}]*\}'
 
   # Same for tracing crate
   - id: rust-cleartext-logging-tracing
@@ -66,7 +68,9 @@ rules:
       impact: MEDIUM
       subcategory:
         - vuln
-    pattern-regex: 'tracing::(info|debug|warn|error|trace)!\s*\([^)]*(?i)(password|secret|token|api.key|credential)'
+      references:
+        - https://owasp.org/Top10/A09_2021-Security_Logging_and_Monitoring_Failures/
+    pattern-regex: 'tracing::(info|debug|warn|error|trace)!\s*\([^)]*(?i)(password|secret|token|api.key|credential)[^)]*\{[^}]*\}'
 
   # println/eprintln with sensitive data
   - id: rust-cleartext-println-sensitive
@@ -88,7 +92,9 @@ rules:
       impact: LOW
       subcategory:
         - audit
-    pattern-regex: '(println|eprintln)!\s*\([^)]*(?i)(password|secret|token|api.key|credential)'
+      references:
+        - https://owasp.org/Top10/A09_2021-Security_Logging_and_Monitoring_Failures/
+    pattern-regex: '(println|eprintln)!\s*\([^)]*(?i)(password|secret|token|api.key|credential)[^)]*\{[^}]*\}'
 
   # NOTE: Log injection taint rule removed — Semgrep cannot parse
   # web::Query<$TYPE> as a Rust taint source. Pattern fallback below.
@@ -115,6 +121,8 @@ rules:
       impact: LOW
       subcategory:
         - vuln
+      references:
+        - https://owasp.org/Top10/A09_2021-Security_Logging_and_Monitoring_Failures/
     patterns:
       - pattern-either:
           - pattern: log::info!($FMT, ..., $QUERY.$FIELD, ...)

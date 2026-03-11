@@ -1,0 +1,32 @@
+rules:
+  # Mutex::lock().unwrap() outside async context — complements
+  # rust-blocking-mutex-in-async which covers async handlers
+  - id: rust-mutex-lock-unwrap
+    languages: [rust]
+    severity: WARNING
+    message: >
+      Mutex::lock().unwrap() will panic if another thread panicked while
+      holding the lock (mutex poisoning). Use .lock().unwrap_or_else(|e| e.into_inner())
+      to recover from poisoned mutexes, or handle the PoisonError explicitly.
+    metadata:
+      confidence: HIGH
+      category: security
+      cwe:
+        - "CWE-248: Uncaught Exception"
+      technology:
+        - rust
+      likelihood: MEDIUM
+      impact: MEDIUM
+      subcategory:
+        - vuln
+      references:
+        - https://doc.rust-lang.org/std/sync/struct.Mutex.html#poisoning
+    patterns:
+      - pattern-either:
+          - pattern: $MUTEX.lock().unwrap()
+          - pattern: $MUTEX.lock().expect(...)
+      # Exclude async functions — already covered by rust-blocking-mutex-in-async
+      - pattern-not-inside: |
+          pub async fn $FN(...) -> $RET {
+            ...
+          }

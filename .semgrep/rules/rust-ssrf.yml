@@ -60,6 +60,8 @@ rules:
       impact: HIGH
       subcategory:
         - vuln
+      references:
+        - https://owasp.org/Top10/A10_2021-Server-Side_Request_Forgery_%28SSRF%29/
     patterns:
       - pattern-either:
           - pattern: reqwest::get(&$OBJ.$FIELD)

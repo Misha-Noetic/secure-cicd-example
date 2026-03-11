@@ -47,6 +47,8 @@ rules:
       impact: HIGH
       subcategory:
         - vuln
+      references:
+        - https://owasp.org/Top10/A07_2021-Identification_and_Authentication_Failures/
     pattern-either:
       - pattern: $BUILDER.danger_accept_invalid_hostnames(true)
       - pattern: reqwest::Client::builder().danger_accept_invalid_hostnames(true)
@@ -57,7 +59,8 @@ rules:
     severity: ERROR
     message: >
       TLS certificate verification disabled via native-tls. This allows
-      man-in-the-middle attacks.
+      man-in-the-middle attacks. Remove danger_accept_invalid_certs(true)
+      and use proper certificate validation.
     metadata:
       confidence: HIGH
       category: security
@@ -72,4 +75,6 @@ rules:
       impact: HIGH
       subcategory:
         - vuln
+      references:
+        - https://owasp.org/Top10/A07_2021-Identification_and_Authentication_Failures/
     pattern: $BUILDER.danger_accept_invalid_certs(true)

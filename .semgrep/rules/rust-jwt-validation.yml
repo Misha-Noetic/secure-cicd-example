@@ -47,6 +47,8 @@ rules:
       impact: HIGH
       subcategory:
         - vuln
+      references:
+        - https://owasp.org/Top10/A02_2021-Cryptographic_Failures/
     pattern: $VALIDATION.validate_exp = false
 
   # Legacy API — dangerous_insecure_decode (removed in jsonwebtoken 8+,
@@ -72,6 +74,8 @@ rules:
       impact: HIGH
       subcategory:
         - vuln
+      references:
+        - https://owasp.org/Top10/A02_2021-Cryptographic_Failures/
     pattern-either:
       - pattern: jsonwebtoken::dangerous_insecure_decode(...)
       - pattern: jsonwebtoken::dangerous_insecure_decode::<$TYPE>(...)

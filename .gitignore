@@ -1,5 +1,29 @@
+# Build artifacts
 /target
+
+# Editor swap/backup files
 *.swp
 *.swo
+*~
+
+# Environment and secrets
 .env
+.env.*
+
+# OS files
 .DS_Store
+Thumbs.db
+
+# IDE directories
+.idea/
+*.iml
+.vscode/
+
+# Debug symbols
+*.pdb
+
+# Logs
+*.log
+
+# Claude Code agent data
+.claude/

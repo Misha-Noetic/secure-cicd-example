@@ -1,0 +1,27 @@
+rules:
+  - id: rust-temp-file-world-readable
+    languages: [rust]
+    severity: WARNING
+    message: >
+      Creating files in /tmp without restrictive permissions is a security risk.
+      Other users on the system can read these files. Use the tempfile crate
+      for secure temporary file creation with proper permissions.
+    metadata:
+      confidence: MEDIUM
+      category: security
+      cwe:
+        - "CWE-377: Insecure Temporary File"
+      owasp:
+        - "A01:2021 - Broken Access Control"
+      technology:
+        - rust
+      likelihood: MEDIUM
+      impact: MEDIUM
+      subcategory:
+        - audit
+      references:
+        - https://owasp.org/Top10/A01_2021-Broken_Access_Control/
+    pattern-either:
+      - pattern: std::fs::File::create("/tmp/...")
+      - pattern: std::fs::write("/tmp/...", ...)
+      - pattern: std::fs::File::create("/var/tmp/...")

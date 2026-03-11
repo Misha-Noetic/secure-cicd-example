@@ -53,6 +53,8 @@ rules:
       impact: MEDIUM
       subcategory:
         - audit
+      references:
+        - https://owasp.org/Top10/A02_2021-Cryptographic_Failures/
     patterns:
       - pattern: rand::thread_rng()
       - pattern-inside: |

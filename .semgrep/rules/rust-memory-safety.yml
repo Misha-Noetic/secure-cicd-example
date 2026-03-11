@@ -18,6 +18,8 @@ rules:
       impact: HIGH
       subcategory:
         - audit
+      references:
+        - https://owasp.org/www-community/vulnerabilities/Buffer_Overflow
     pattern-either:
       - pattern: std::mem::transmute(...)
       - pattern: std::mem::transmute::<$A, $B>(...)
@@ -41,6 +43,8 @@ rules:
       impact: HIGH
       subcategory:
         - audit
+      references:
+        - https://owasp.org/www-community/vulnerabilities/Buffer_Overflow
     pattern-either:
       - pattern: std::slice::from_raw_parts(...)
       - pattern: std::slice::from_raw_parts_mut(...)
@@ -63,6 +67,8 @@ rules:
       impact: HIGH
       subcategory:
         - audit
+      references:
+        - https://owasp.org/www-community/vulnerabilities/Buffer_Overflow
     pattern: Box::from_raw(...)
 
   # Uninitialized memory
@@ -84,6 +90,8 @@ rules:
       impact: HIGH
       subcategory:
         - vuln
+      references:
+        - https://owasp.org/www-community/vulnerabilities/Buffer_Overflow
     pattern-either:
       - pattern: std::mem::uninitialized()
       - pattern: std::mem::zeroed()
@@ -107,4 +115,6 @@ rules:
       impact: MEDIUM
       subcategory:
         - audit
+      references:
+        - https://owasp.org/www-community/vulnerabilities/Buffer_Overflow
     pattern: $VEC.set_len(...)

@@ -1,0 +1,35 @@
+rules:
+  - id: rust-truncating-cast
+    languages: [rust]
+    severity: WARNING
+    message: >
+      Potentially truncating cast detected. The 'as' keyword silently
+      truncates values. Use TryFrom/TryInto for checked conversions:
+      u32::try_from(value).map_err(|_| "overflow")?
+    metadata:
+      confidence: LOW
+      category: security
+      cwe:
+        - "CWE-190: Integer Overflow or Wraparound"
+      owasp:
+        - "A04:2021 - Insecure Design"
+      technology:
+        - rust
+      likelihood: MEDIUM
+      impact: MEDIUM
+      subcategory:
+        - audit
+      references:
+        - https://doc.rust-lang.org/reference/expressions/operator-expr.html#type-cast-expressions
+    # Only flag narrowing casts (u8/i8/u16/i16) inside web handlers
+    # to avoid excessive noise from safe u32/usize casts
+    patterns:
+      - pattern-either:
+          - pattern: $EXPR as u8
+          - pattern: $EXPR as i8
+          - pattern: $EXPR as u16
+          - pattern: $EXPR as i16
+      - pattern-inside: |
+          pub async fn $FN(...) -> $RET {
+            ...
+          }

@@ -1,0 +1,32 @@
+rules:
+  - id: rust-panic-in-drop
+    languages: [rust]
+    severity: ERROR
+    message: >
+      Panicking in a Drop implementation can cause a double-panic abort if
+      the drop happens during stack unwinding. Use .ok(), .unwrap_or_default(),
+      or log errors instead of .unwrap()/.expect() in drop.
+    metadata:
+      confidence: HIGH
+      category: security
+      cwe:
+        - "CWE-248: Uncaught Exception"
+      technology:
+        - rust
+      likelihood: MEDIUM
+      impact: HIGH
+      subcategory:
+        - vuln
+      references:
+        - https://doc.rust-lang.org/std/ops/trait.Drop.html
+    patterns:
+      - pattern-inside: |
+          impl Drop for $TYPE {
+            fn drop(&mut self) {
+              ...
+            }
+          }
+      - pattern-either:
+          - pattern: $EXPR.unwrap()
+          - pattern: $EXPR.expect(...)
+          - pattern: panic!(...)

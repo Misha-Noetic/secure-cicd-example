@@ -19,6 +19,8 @@ rules:
       impact: MEDIUM
       subcategory:
         - audit
+      references:
+        - https://owasp.org/www-community/attacks/Denial_of_Service
     patterns:
       - pattern-either:
           - pattern: std::fs::read_to_string(...)
@@ -49,6 +51,8 @@ rules:
       impact: MEDIUM
       subcategory:
         - audit
+      references:
+        - https://owasp.org/www-community/attacks/Denial_of_Service
     patterns:
       - pattern: $MUTEX.lock().unwrap()
       - pattern-inside: |
@@ -75,6 +79,8 @@ rules:
       impact: HIGH
       subcategory:
         - audit
+      references:
+        - https://owasp.org/www-community/attacks/Denial_of_Service
     patterns:
       - pattern: Vec::with_capacity($SIZE)
       - pattern-inside: |
@@ -102,6 +108,8 @@ rules:
       impact: HIGH
       subcategory:
         - audit
+      references:
+        - https://owasp.org/www-community/attacks/Denial_of_Service
     patterns:
       - pattern: |
           for $ITEM in $ITER {
