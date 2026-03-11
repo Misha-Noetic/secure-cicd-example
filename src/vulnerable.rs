@@ -557,3 +557,78 @@ pub fn vuln_fixed_seed() {
 pub fn vuln_thread_rng_crypto() {
     let _rng = rand::thread_rng();
 }
+
+// =============================================================================
+// 20. CLEARTEXT STORAGE IN DATABASE (rust-cleartext-storage.yml)
+//     Rules: cleartext-db-storage-rusqlite, cleartext-db-storage-sqlx,
+//            cleartext-db-storage-diesel
+// =============================================================================
+
+/// Triggers: rust-cleartext-db-storage-rusqlite
+pub fn vuln_cleartext_db_storage(db: &rusqlite::Connection, user: &str, password: &str) {
+    let _ = db.execute(&format!(
+        "INSERT INTO users (name, password) VALUES ('{}', '{}')",
+        user, password
+    ), []);
+}
+
+/// Triggers: rust-cleartext-db-storage-sqlx
+pub fn vuln_cleartext_db_storage_sqlx(user: &str, password: &str) {
+    let _q: sqlx::query::Query<'_, sqlx::Sqlite, _> = sqlx::query(&format!(
+        "INSERT INTO users (name, password) VALUES ('{}', '{}')",
+        user, password
+    ));
+}
+
+/// Triggers: rust-cleartext-db-storage-diesel
+pub fn vuln_cleartext_db_storage_diesel(user: &str, secret: &str) {
+    let _ = diesel::sql_query(format!(
+        "UPDATE users SET secret = '{}' WHERE name = '{}'",
+        secret, user
+    ));
+}
+
+// =============================================================================
+// 21. CLEARTEXT TRANSMISSION (rust-cleartext-transmission.yml)
+//     Rules: cleartext-transmission-tcp-write,
+//            cleartext-transmission-http-sensitive
+// =============================================================================
+
+/// Triggers: rust-cleartext-transmission-tcp-write
+pub fn vuln_cleartext_tcp_transmission(addr: &str, password: &str) {
+    use std::io::Write;
+    if let Ok(mut stream) = std::net::TcpStream::connect(addr) {
+        let _ = stream.write_all(password.as_bytes());
+    }
+}
+
+/// Triggers: rust-cleartext-transmission-http-sensitive
+pub async fn vuln_cleartext_http_transmission(password: &str) {
+    let client = reqwest::Client::new();
+    let _ = client.post("http://api.example.com/login").body(format!("password={}", password)).send().await;
+}
+
+// =============================================================================
+// 22. UNCONTROLLED ALLOCATION (rust-uncontrolled-allocation.yml)
+//     Rules: uncontrolled-vec-repeat-alloc, uncontrolled-string-alloc,
+//            uncontrolled-vec-resize
+// =============================================================================
+
+/// Triggers: rust-uncontrolled-vec-repeat-alloc
+pub async fn vuln_uncontrolled_vec_repeat(query: web::Query<AllocQuery>) -> impl Responder {
+    let _buf = vec![0u8; query.size];
+    HttpResponse::Ok().body("allocated")
+}
+
+/// Triggers: rust-uncontrolled-string-alloc
+pub async fn vuln_uncontrolled_string(query: web::Query<AllocQuery>) -> impl Responder {
+    let _s = String::with_capacity(query.size);
+    HttpResponse::Ok().body("allocated")
+}
+
+/// Triggers: rust-uncontrolled-vec-resize
+pub async fn vuln_uncontrolled_resize(query: web::Query<AllocQuery>) -> impl Responder {
+    let mut buf: Vec<u8> = Vec::new();
+    buf.resize(query.size, 0);
+    HttpResponse::Ok().body("allocated")
+}

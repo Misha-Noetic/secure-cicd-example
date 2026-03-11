@@ -19,12 +19,12 @@ GitHub repo: `Misha-Noetic/secure-cicd-example` — a Rust (actix-web) API with 
 - Runs on push, PR, and daily schedule (`cron: '0 7 * * *'` for full-history secret scans)
 - TruffleHog has a base/head identical guard for GitHub UI edits on PRs
 
-#### 2. `.github/workflows/codeql.yml` — CodeQL Semantic Analysis
-- Rust with `build-mode: none`, `security-extended` query suite
-- Catches cleartext logging + non-HTTPS URLs (2 of 9 intentional vulns)
-- Misses SQL injection, XSS, SSRF, path traversal, log injection, weak crypto, regex injection due to immature Rust library models
+#### 2. `.github/workflows/codeql.yml` — REMOVED
+- CodeQL was removed after a head-to-head comparison (PR #17) showed that all 5 CodeQL Rust findings were already covered by custom Semgrep rules, while Semgrep caught 64 additional issues across 17 more vulnerability categories
+- CodeQL's Rust support is security-only (18 queries, no code quality), and its taint-analysis advantage didn't fire without route-wired handlers
+- 3 new Semgrep rules were added to cover the remaining CodeQL query gaps (cleartext storage, cleartext transmission, uncontrolled allocation)
 
-#### 3. `.github/workflows/semgrep.yml` — Semgrep SAST (Newly Added)
+#### 3. `.github/workflows/semgrep.yml` — Semgrep SAST (Primary Scanner)
 - Uses `semgrep/semgrep` Docker image with `semgrep ci`
 - Connected to Semgrep AppSec Platform with `SEMGREP_APP_TOKEN`
 - Semgrep Assistant AI triage enabled
@@ -44,7 +44,7 @@ Removed as redundant with cargo-audit + Trivy FS.
 |------|---------|
 | `.trufflehog.yml` | Custom detector for org-specific DB connection strings (regex with capture group required) |
 | `.trufflehog-exclude.txt` | Allowlist excluding `src/config\.rs` from full-history scans (rotated test secrets) |
-| `.semgrep/rules/*.yml` | 18 custom Semgrep rules for Rust security (SQL injection, XSS, command injection, weak crypto, etc.) |
+| `.semgrep/rules/*.yml` | 22 custom Semgrep rules for Rust security (SQL injection, XSS, command injection, weak crypto, cleartext storage/transmission, uncontrolled allocation, etc.) |
 | `RUST-ATTACK-SURFACE.md` | Comprehensive Rust attack surface reference catalog (10 categories, 50+ patterns) |
 | `.github/dependabot.yml` | Monitors cargo, github-actions, docker ecosystems weekly |
 | `.pre-commit-config.yaml` | TruffleHog + pre-commit-hooks for local scanning |
@@ -57,7 +57,7 @@ Required status checks, no direct push to main, PR-based workflow enforced.
 
 ## Intentionally Vulnerable Code
 
-`src/vulnerable.rs` contains 23 endpoints for testing scanner coverage:
+`src/vulnerable.rs` contains 31 endpoints for testing scanner coverage:
 
 ### Original Vulnerability Set (1-9)
 
@@ -91,58 +91,60 @@ Required status checks, no direct push to main, PR-based workflow enforced.
 | 21 | Unbounded allocation | `Vec::with_capacity(user_controlled_size)` |
 | 22 | Timing side-channel | `stored_secret == user_token` (non-constant-time) |
 | 23 | Symlink TOCTOU | `path.exists()` then `fs::read_to_string()` |
+| 24 | Cleartext DB storage | `rusqlite::execute` INSERT with password in plaintext |
+| 25 | Cleartext DB storage (sqlx) | `sqlx::query` INSERT with password in plaintext |
+| 26 | Cleartext DB storage (diesel) | `diesel::sql_query` UPDATE with secret in plaintext |
+| 27 | Cleartext TCP transmission | `TcpStream::write_all()` with password bytes |
+| 28 | Cleartext HTTP transmission | `reqwest::post("http://...")` with password in body |
+| 29 | Uncontrolled vec repeat alloc | `vec![0u8; query.size]` from user input |
+| 30 | Uncontrolled string alloc | `String::with_capacity(query.size)` from user input |
+| 31 | Uncontrolled vec resize | `Vec::resize(query.size, 0)` from user input |
 
 ---
 
 ## Key Findings
 
-### Scanner Coverage — Before Custom Rules (9 Original Vulns)
+### Scanner Coverage — Custom Semgrep Rules Only (All 31 Vulns)
 
-| Vulnerability | CodeQL | Semgrep (built-in) | Combined |
+CodeQL was removed after PR #17 proved 100% overlap (all 5 CodeQL findings duplicated by Semgrep).
+
+| # | Vulnerability | Custom Rule | Status |
 |---|---|---|---|
-| SQL injection | ❌ | ❌ | ❌ |
-| XSS | ❌ | ❌ | ❌ |
-| Path traversal | ❌ | ✅ | ✅ |
-| SSRF | ❌ | ✅ | ✅ |
-| Log injection | ❌ | ❌ | ❌ |
-| Cleartext logging | ✅ | ❌ | ✅ |
-| Weak crypto (MD5) | ❌ | ❌ | ❌ |
-| Regex injection | ❌ | ❌ | ❌ |
-| Non-HTTPS URL | ✅ | ❌ | ✅ |
+| 1 | SQL injection | `rust-sql-injection.yml` | ✅ |
+| 2 | XSS | `rust-xss.yml` | ✅ |
+| 3 | Path traversal | `rust-path-traversal.yml` | ✅ |
+| 4 | SSRF | `rust-ssrf.yml` | ✅ |
+| 5 | Log injection | `rust-log-security.yml` | ✅ |
+| 6 | Cleartext logging | `rust-log-security.yml` | ✅ |
+| 7 | Weak crypto | `rust-weak-crypto.yml` | ✅ |
+| 8 | Regex injection | `rust-regex-injection.yml` | ✅ |
+| 9 | Non-HTTPS URL | `rust-non-https.yml` | ✅ |
+| 10 | Command injection | `rust-command-injection.yml` | ✅ |
+| 11 | Unsafe transmute | `rust-memory-safety.yml` | ✅ |
+| 12 | CORS permissive | `rust-web-security.yml` | ✅ |
+| 13 | Open redirect | `rust-web-security.yml` | ✅ |
+| 14 | JWT insecure decode | `rust-jwt-validation.yml` | ✅ |
+| 15 | TLS bypass | `rust-tls-bypass.yml` | ✅ |
+| 16 | Hardcoded DB password | `rust-hardcoded-secrets.yml` | ✅ |
+| 17 | Error info disclosure | `rust-web-security.yml` | ✅ |
+| 18 | todo!() in handler | `rust-production-readiness.yml` | ✅ |
+| 19 | YAML deserialization | `rust-deserialization.yml` | ✅ |
+| 20 | Blocking in async | `rust-async-safety.yml` | ✅ |
+| 21 | Unbounded allocation | `rust-async-safety.yml` | ✅ |
+| 22 | Timing side-channel | `rust-weak-crypto.yml` | ⚠️ |
+| 23 | TOCTOU | `rust-toctou.yml` | ✅ |
+| 24 | Cleartext DB storage | `rust-cleartext-storage.yml` | ✅ |
+| 25 | Cleartext DB storage (sqlx) | `rust-cleartext-storage.yml` | ✅ |
+| 26 | Cleartext DB storage (diesel) | `rust-cleartext-storage.yml` | ✅ |
+| 27 | Cleartext TCP transmission | `rust-cleartext-transmission.yml` | ✅ |
+| 28 | Cleartext HTTP transmission | `rust-cleartext-transmission.yml` | ✅ |
+| 29 | Uncontrolled vec repeat alloc | `rust-uncontrolled-allocation.yml` | ✅ |
+| 30 | Uncontrolled string alloc | `rust-uncontrolled-allocation.yml` | ✅ |
+| 31 | Uncontrolled vec resize | `rust-uncontrolled-allocation.yml` | ✅ |
 
-**Before custom rules: 4 of 9 caught, zero overlap between tools.**
+**Expected: 30-31 of 31 caught.** (Timing side-channel ⚠️ depends on metavariable-regex support.)
 
-### Scanner Coverage — After Custom Semgrep Rules (All 23 Vulns)
-
-| # | Vulnerability | CodeQL | Semgrep Built-in | Custom Rule | Expected |
-|---|---|---|---|---|---|
-| 1 | SQL injection | ❌ | ❌ | `rust-sql-injection.yml` | ✅ |
-| 2 | XSS | ❌ | ❌ | `rust-xss.yml` | ✅ |
-| 3 | Path traversal | ❌ | ✅ | `rust-path-traversal.yml` | ✅ |
-| 4 | SSRF | ❌ | ✅ | — | ✅ |
-| 5 | Log injection | ❌ | ❌ | `rust-log-security.yml` | ✅ |
-| 6 | Cleartext logging | ✅ | ❌ | `rust-log-security.yml` | ✅ |
-| 7 | Weak crypto | ❌ | ❌ | `rust-weak-crypto.yml` | ✅ |
-| 8 | Regex injection | ❌ | ❌ | `rust-regex-injection.yml` | ✅ |
-| 9 | Non-HTTPS URL | ✅ | ❌ | `rust-non-https.yml` | ✅ |
-| 10 | Command injection | — | — | `rust-command-injection.yml` | ✅ |
-| 11 | Unsafe transmute | — | — | `rust-memory-safety.yml` | ✅ |
-| 12 | CORS permissive | — | — | `rust-web-security.yml` | ✅ |
-| 13 | Open redirect | — | — | `rust-web-security.yml` | ✅ |
-| 14 | JWT insecure decode | — | — | `rust-jwt-validation.yml` | ✅ |
-| 15 | TLS bypass | — | — | `rust-tls-bypass.yml` | ✅ |
-| 16 | Hardcoded DB password | — | — | `rust-hardcoded-secrets.yml` | ✅ |
-| 17 | Error info disclosure | — | — | `rust-web-security.yml` | ✅ |
-| 18 | todo!() in handler | — | — | `rust-production-readiness.yml` | ✅ |
-| 19 | YAML deserialization | — | — | `rust-deserialization.yml` | ✅ |
-| 20 | Blocking in async | — | — | `rust-async-safety.yml` | ✅ |
-| 21 | Unbounded allocation | — | — | `rust-async-safety.yml` | ✅ |
-| 22 | Timing side-channel | — | — | `rust-weak-crypto.yml` | ⚠️ |
-| 23 | TOCTOU | — | — | `rust-toctou.yml` | ✅ |
-
-**Expected after custom rules: 22-23 of 23 caught.** (Timing side-channel ⚠️ depends on metavariable-regex support.)
-
-**Root cause of original gaps:** Rust library models are immature across all SAST providers. Custom Semgrep rules using pattern matching (not taint) sidestep these limitations.
+**Design philosophy:** Rust library models are immature across all SAST providers. Custom Semgrep rules using pattern matching (not taint) sidestep these limitations entirely.
 
 ### SonarQube Assessment
 User's team uses SonarQube — it has **zero Rust support**. Good for code quality (Java/C#/JS) but not a security tool. Complementary to Semgrep, not competing.
@@ -154,17 +156,17 @@ Open-source CLI tool that runs CodeQL + LLM-powered triage. Currently **C/C++ on
 
 ## Planned But Not Yet Deployed
 
-### 1. DIY CodeQL + LLM Triage (Part C)
-A new `ai-triage` job in `codeql.yml` that:
-- Downloads SARIF output from CodeQL
+### 1. DIY Semgrep + LLM Triage
+A potential future `ai-triage` job that:
+- Downloads SARIF output from Semgrep
 - Extracts each finding + surrounding code context (±15 lines)
 - Sends to Claude Haiku for classification: TRUE POSITIVE / FALSE POSITIVE / NEEDS REVIEW
 - Prints a triage report in workflow logs
 
-Requires `ANTHROPIC_API_KEY` secret. Code is written but not committed yet.
+Requires `ANTHROPIC_API_KEY` secret. Concept designed but not committed yet.
 
-### 2. Custom Semgrep Rules — DEPLOYED
-18 custom rule files in `.semgrep/rules/` covering:
+### 2. Custom Semgrep Rules — DEPLOYED (22 rule files)
+22 custom rule files in `.semgrep/rules/` covering:
 - SQL injection (format!→prepare/execute), XSS (format!→HTML body), command injection
 - Weak crypto (MD5/SHA1), regex injection, TLS bypass, JWT validation bypass
 - Log injection, cleartext logging, non-HTTPS URLs, hardcoded secrets
@@ -173,6 +175,8 @@ Requires `ANTHROPIC_API_KEY` secret. Code is written but not committed yet.
 - Web security (CORS permissive, open redirects, error info disclosure)
 - TOCTOU file race conditions, async safety (blocking I/O, unbounded alloc)
 - Deserialization (YAML, bincode), insecure random, path traversal (full sink set)
+- Cleartext DB storage (rusqlite, sqlx, diesel), cleartext transmission (TCP, HTTP)
+- Uncontrolled allocation (vec repeat, String::with_capacity, Vec::resize)
 
 See `RUST-ATTACK-SURFACE.md` for the comprehensive reference catalog these rules are based on.
 
@@ -180,8 +184,8 @@ See `RUST-ATTACK-SURFACE.md` for the comprehensive reference catalog these rules
 
 ## Open PRs / Branches
 
-- **PR #11** (`feature/codeql-deep-dive`) — Open, contains the intentionally vulnerable code. Semgrep now blocks it (SSRF + path traversal). CodeQL found 2 alerts (cleartext logging + non-HTTPS).
-- **Dependabot PRs (#1-4)** — Still open (bumping actions/checkout, actions/cache, actions/upload-artifact, github/codeql-action)
+- **PR #17** (`test/semgrep-rules-validation`) — Open, validates all 22 custom Semgrep rules with intentionally vulnerable code. Used for CodeQL vs Semgrep comparison.
+- **Dependabot PRs (#1-4)** — Still open (bumping actions/checkout, actions/cache, actions/upload-artifact)
 - **Old test branches** — `test/secret-in-pr`, `test/leaked-credentials` (can be cleaned up)
 
 ---
@@ -196,5 +200,5 @@ See `RUST-ATTACK-SURFACE.md` for the comprehensive reference catalog these rules
 6. **Removing secrets via GitHub UI doesn't help TruffleHog** — old commits still in history
 7. **Best practice for rotated secrets:** rotate → allowlist, don't rewrite git history
 8. **Rust SAST coverage is thin across all providers** — no single tool gives Java/Python-level coverage; layering tools + custom rules is essential
-9. **Semgrep and CodeQL have zero overlap on Rust** — running both caught 4/9 vs 2/9 individually
+9. **Semgrep custom rules > CodeQL for Rust** — PR #17 proved 100% CodeQL overlap (5/5 findings duplicated), Semgrep caught 69+ total across 22 rule categories vs CodeQL's 5. CodeQL removed from pipeline.
 10. **SonarQube ≠ security scanner** — good for code quality, not for finding exploitable vulnerabilities
