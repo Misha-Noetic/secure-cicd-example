@@ -44,11 +44,6 @@ jobs:
         env:
           SEMGREP_APP_TOKEN: ${{ secrets.SEMGREP_APP_TOKEN }}
 
-      # Validate custom rules before scanning
-      - name: Validate custom rules
-        if: always() && github.actor != 'dependabot[bot]'
-        run: semgrep scan --validate --metrics=off --config .semgrep/rules/ 2>&1
-
       # ── Step 2: Custom local rules (blocking) ──
       # Runs repo-specific Rust security rules from .semgrep/rules/.
       # Outputs SARIF for the GitHub Security tab. Also blocks on findings.
@@ -59,9 +54,8 @@ jobs:
         if: always() && github.actor != 'dependabot[bot]'
         run: |
           set +e
-          semgrep scan --metrics=off --config .semgrep/rules/ --verbose --sarif -o semgrep-custom.sarif 2>&1; rc=$?
+          semgrep scan --metrics=off --config .semgrep/rules/ --sarif -o semgrep-custom.sarif; rc=$?
           set -e
-          echo "Semgrep custom rules exited with code $rc"
           if [ $rc -gt 1 ]; then echo "Semgrep error (exit $rc)"; exit $rc; fi
 
       # ── Standalone fallback (no platform token) ──
