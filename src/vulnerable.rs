@@ -1,64 +1,91 @@
 // =============================================================================
-// INTENTIONALLY VULNERABLE RUST CODE — FOR SEMGREP RULE TESTING ONLY
+// INTENTIONALLY VULNERABLE RUST CODE — FOR SECURITY SCANNER TESTING
 // =============================================================================
-// This file is NOT compiled (no `mod vulnerable;` in main.rs).
-// It exists solely so Semgrep can scan it and produce findings for every
-// custom rule in .semgrep/rules/.
+// This module is compiled (registered via `mod vulnerable;` in main.rs) so
+// that BOTH Semgrep AND CodeQL can analyze it. No routes are wired up — the
+// code exists solely to produce scanner findings.
 //
-// DO NOT add `mod vulnerable;` to main.rs — that would break cargo build
-// since these imports are not in Cargo.toml.
+// Compare results: Semgrep (custom rules) vs CodeQL (built-in Rust queries)
 // =============================================================================
 
-#![allow(unused, dead_code)]
+#![allow(
+    unused,
+    dead_code,
+    deprecated,
+    unreachable_code,
+    clippy::all,
+    unused_imports,
+    unused_variables,
+    unused_mut,
+    unused_must_use,
+    invalid_value
+)]
+
+// ── Imports ──────────────────────────────────────────────────────────────────
 
 use actix_web::{web, HttpResponse, Responder};
 use serde::Deserialize;
 
-// ── Shared request structs used across handlers ──────────────────────────────
+// Crypto
+use digest::Digest;
+use md5::Md5; // from md-5 crate (RustCrypto)
+use sha1::Sha1;
+use md2::Md2;
+use md4::Md4;
+
+// Other
+use actix_cors::Cors;
+use rand::SeedableRng;
+use regex::Regex;
+
+#[cfg(unix)]
+use std::os::unix::fs::PermissionsExt;
+
+// ── Request structs ──────────────────────────────────────────────────────────
 
 #[derive(Deserialize)]
-struct SearchQuery {
-    term: String,
+pub struct SearchQuery {
+    pub term: String,
 }
 
 #[derive(Deserialize)]
-struct FileQuery {
-    path: String,
+pub struct FileQuery {
+    pub path: String,
 }
 
 #[derive(Deserialize)]
-struct UrlQuery {
-    url: String,
+pub struct UrlQuery {
+    pub url: String,
 }
 
 #[derive(Deserialize)]
-struct ExecQuery {
-    cmd: String,
+pub struct ExecQuery {
+    pub cmd: String,
 }
 
 #[derive(Deserialize)]
-struct AllocQuery {
-    size: usize,
+pub struct AllocQuery {
+    pub size: usize,
 }
 
 #[derive(Deserialize)]
-struct RegexQuery {
-    pattern: String,
+pub struct RegexQuery {
+    pub pattern: String,
 }
 
 #[derive(Deserialize)]
-struct TokenQuery {
-    token: String,
+pub struct TokenQuery {
+    pub token: String,
 }
 
 #[derive(Deserialize)]
-struct RedirectQuery {
-    target: String,
+pub struct RedirectQuery {
+    pub target: String,
 }
 
 #[derive(Deserialize)]
-struct YamlQuery {
-    data: String,
+pub struct YamlQuery {
+    pub data: String,
 }
 
 // =============================================================================
@@ -67,43 +94,41 @@ struct YamlQuery {
 // =============================================================================
 
 /// Triggers: rust-sql-injection-format-prepare
-pub async fn vuln_sql_prepare(
-    db: &rusqlite::Connection,
-    query: web::Query<SearchQuery>,
-) -> impl Responder {
-    let sql = format!("SELECT * FROM users WHERE name = '{}'", query.term);
-    let _stmt = db.prepare(&sql);
-    HttpResponse::Ok().body("done")
+pub fn vuln_sql_prepare(db: &rusqlite::Connection, term: &str) {
+    let sql = format!("SELECT * FROM users WHERE name = '{}'", term);
+    let _ = db.prepare(&sql);
 }
 
 /// Triggers: rust-sql-injection-format-execute
-pub async fn vuln_sql_execute(
-    db: &rusqlite::Connection,
-    query: web::Query<SearchQuery>,
-) -> impl Responder {
-    let sql = format!("DELETE FROM sessions WHERE user = '{}'", query.term);
-    let _result = db.execute(&sql, []);
-    HttpResponse::Ok().body("done")
+pub fn vuln_sql_execute(db: &rusqlite::Connection, term: &str) {
+    let sql = format!("DELETE FROM sessions WHERE user = '{}'", term);
+    let _ = db.execute(&sql, []);
 }
 
 /// Triggers: rust-sql-injection-inline-prepare
-pub async fn vuln_sql_inline(db: &rusqlite::Connection, input: &str) -> impl Responder {
-    let _stmt = db.prepare(&format!("SELECT * FROM logs WHERE msg = '{}'", input));
-    db.execute(&format!("INSERT INTO events VALUES ('{}')", input), []).ok();
-    db.execute_batch(&format!("UPDATE counters SET n = n + 1 WHERE id = '{}'", input)).ok();
-    HttpResponse::Ok().body("done")
+pub fn vuln_sql_inline(db: &rusqlite::Connection, input: &str) {
+    let _ = db.prepare(&format!("SELECT * FROM logs WHERE msg = '{}'", input));
+    let _ = db.execute(&format!("INSERT INTO events VALUES ('{}')", input), []);
+    let _ = db.execute_batch(&format!(
+        "UPDATE counters SET n = n + 1 WHERE id = '{}'",
+        input
+    ));
 }
 
 /// Triggers: rust-sql-injection-diesel
-pub async fn vuln_sql_diesel(query: web::Query<SearchQuery>) -> impl Responder {
-    let _result = diesel::sql_query(format!("SELECT * FROM users WHERE id = {}", query.term));
-    HttpResponse::Ok().body("done")
+pub fn vuln_sql_diesel(term: &str) {
+    let _ = diesel::sql_query(format!(
+        "SELECT * FROM users WHERE id = {}",
+        term
+    ));
 }
 
 /// Triggers: rust-sql-injection-sqlx
-pub async fn vuln_sql_sqlx(query: web::Query<SearchQuery>) -> impl Responder {
-    let _result = sqlx::query(&format!("SELECT * FROM users WHERE name = '{}'", query.term));
-    HttpResponse::Ok().body("done")
+pub fn vuln_sql_sqlx(term: &str) {
+    let _ = sqlx::query(&format!(
+        "SELECT * FROM users WHERE name = '{}'",
+        term
+    ));
 }
 
 // =============================================================================
@@ -133,12 +158,11 @@ pub async fn vuln_xss_content_type(query: web::Query<SearchQuery>) -> impl Respo
 
 // =============================================================================
 // 3. COMMAND INJECTION (rust-command-injection.yml)
-//    Rule: command-injection-shell
 // =============================================================================
 
 /// Triggers: rust-command-injection-shell
 pub async fn vuln_command_injection(query: web::Query<ExecQuery>) -> impl Responder {
-    let _output = std::process::Command::new("sh")
+    let _ = std::process::Command::new("sh")
         .arg("-c")
         .arg(&query.cmd)
         .output();
@@ -153,13 +177,13 @@ pub async fn vuln_command_injection(query: web::Query<ExecQuery>) -> impl Respon
 /// Triggers: rust-ssrf-reqwest-get
 pub async fn vuln_ssrf_client(query: web::Query<UrlQuery>) -> impl Responder {
     let client = reqwest::Client::new();
-    let _resp = client.get(&query.url).send().await;
+    let _ = client.get(&query.url).send().await;
     HttpResponse::Ok().body("fetched")
 }
 
 /// Triggers: rust-ssrf-reqwest-standalone
 pub async fn vuln_ssrf_standalone(query: web::Query<UrlQuery>) -> impl Responder {
-    let _resp = reqwest::get(&query.url).await;
+    let _ = reqwest::get(&query.url).await;
     HttpResponse::Ok().body("fetched")
 }
 
@@ -175,15 +199,16 @@ pub async fn vuln_path_traversal(query: web::Query<FileQuery>) -> impl Responder
 }
 
 /// Triggers: rust-fs-destructive-operations
+#[cfg(unix)]
 pub fn vuln_destructive_fs(path: &str) {
-    std::fs::remove_dir_all(path).ok();
-    std::fs::set_permissions(path, std::fs::Permissions::from_mode(0o777)).ok();
+    let _ = std::fs::remove_dir_all(path);
+    let _ = std::fs::set_permissions(path, std::fs::Permissions::from_mode(0o777));
 }
 
 // =============================================================================
 // 6. HARDCODED SECRETS (rust-hardcoded-secrets.yml)
 //    Rules: hardcoded-db-credentials, hardcoded-private-key, hardcoded-api-key
-//    NOTE: These patterns will be excluded from TruffleHog via .trufflehog-exclude.txt
+//    NOTE: TruffleHog excludes this file via .trufflehog-exclude.txt
 // =============================================================================
 
 /// Triggers: rust-hardcoded-db-credentials
@@ -204,24 +229,28 @@ pub fn vuln_hardcoded_api() {
 
 // =============================================================================
 // 7. WEAK CRYPTOGRAPHY (rust-weak-crypto.yml)
-//    Rules: weak-crypto-md5, weak-crypto-sha1, weak-crypto-md2-md4, timing-side-channel
+//    Rules: weak-crypto-md5, weak-crypto-sha1, weak-crypto-md2-md4,
+//           timing-side-channel
 // =============================================================================
 
-/// Triggers: rust-weak-crypto-md5
+/// Triggers: rust-weak-crypto-md5 (Md5::new pattern)
 pub fn vuln_md5(data: &[u8]) {
-    let _hasher = Md5::new();
-    let _digest = md5::compute(data);
+    let mut hasher = Md5::new();
+    hasher.update(data);
+    let _ = hasher.finalize();
 }
 
 /// Triggers: rust-weak-crypto-sha1
 pub fn vuln_sha1(data: &[u8]) {
-    let _hasher = Sha1::new();
+    let mut hasher = Sha1::new();
+    hasher.update(data);
+    let _ = hasher.finalize();
 }
 
 /// Triggers: rust-weak-crypto-md2-md4
-pub fn vuln_md2_md4() {
-    let _h2 = Md2::new();
-    let _h4 = Md4::new();
+pub fn vuln_md2_md4(data: &[u8]) {
+    let _ = Md2::new();
+    let _ = Md4::new();
 }
 
 /// Triggers: rust-timing-side-channel
@@ -239,7 +268,7 @@ pub fn vuln_timing(stored_secret: &str, user_input: &str) -> bool {
 pub fn vuln_transmute() {
     unsafe {
         let val: u32 = 42;
-        let _big: u64 = std::mem::transmute(val);
+        let _big: u64 = std::mem::transmute::<[u32; 2], u64>([val, 0]);
     }
 }
 
@@ -263,8 +292,7 @@ pub fn vuln_box_from_raw() {
 /// Triggers: rust-unsafe-uninitialized-memory
 pub fn vuln_uninitialized() {
     unsafe {
-        let _val: String = std::mem::uninitialized();
-        let _zero: &str = std::mem::zeroed();
+        let _zero: u64 = std::mem::zeroed();
     }
 }
 
@@ -278,54 +306,52 @@ pub fn vuln_set_len() {
 
 // =============================================================================
 // 9. JWT VALIDATION BYPASS (rust-jwt-validation.yml)
-//    Rules: jwt-insecure-decode, jwt-disabled-exp, jwt-insecure-validation
+//    Rules: jwt-disabled-exp, jwt-insecure-validation
+//    NOTE: dangerous_insecure_decode was removed in jsonwebtoken v8+.
+//    We pin to v9.x so we test the 2 current-API rules.
 // =============================================================================
 
-/// Triggers: rust-jwt-insecure-decode
-pub fn vuln_jwt_decode(token: &str) {
-    let _claims = jsonwebtoken::dangerous_insecure_decode::<serde_json::Value>(token);
-}
-
 /// Triggers: rust-jwt-disabled-exp
-pub fn vuln_jwt_no_exp(token: &str) {
+pub fn vuln_jwt_no_exp() {
     let mut validation = jsonwebtoken::Validation::default();
     validation.validate_exp = false;
 }
 
 /// Triggers: rust-jwt-insecure-validation
-pub fn vuln_jwt_insecure(validation: &mut jsonwebtoken::Validation) {
+pub fn vuln_jwt_insecure() {
+    let mut validation = jsonwebtoken::Validation::default();
     validation.insecure_disable_signature_validation();
 }
 
 // =============================================================================
 // 10. TLS CERTIFICATE BYPASS (rust-tls-bypass.yml)
-//     Rules: tls-accept-invalid-certs, tls-accept-invalid-hostnames, tls-native-bypass
+//     Rules: tls-accept-invalid-certs, tls-accept-invalid-hostnames,
+//            tls-native-bypass
 // =============================================================================
 
 /// Triggers: rust-tls-accept-invalid-certs
 pub fn vuln_tls_certs() {
-    let _client = reqwest::Client::builder()
+    let _ = reqwest::Client::builder()
         .danger_accept_invalid_certs(true)
         .build();
 }
 
 /// Triggers: rust-tls-accept-invalid-hostnames
 pub fn vuln_tls_hostnames() {
-    let _client = reqwest::Client::builder()
+    let _ = reqwest::Client::builder()
         .danger_accept_invalid_hostnames(true)
         .build();
 }
 
 /// Triggers: rust-tls-native-bypass
 pub fn vuln_tls_native() {
-    let _connector = native_tls::TlsConnector::builder()
+    let _ = native_tls::TlsConnector::builder()
         .danger_accept_invalid_certs(true)
         .build();
 }
 
 // =============================================================================
 // 11. NON-HTTPS URL (rust-non-https.yml)
-//     Rule: non-https-url-literal
 // =============================================================================
 
 /// Triggers: rust-non-https-url-literal
@@ -340,14 +366,14 @@ pub fn vuln_http_url() {
 // =============================================================================
 
 /// Triggers: rust-regex-injection-variable
-pub fn vuln_regex(query: &RegexQuery) {
-    let _re = regex::Regex::new(&query.pattern);
-    let _re2 = Regex::new(&query.pattern);
+pub fn vuln_regex(pattern: &str) {
+    let _ = regex::Regex::new(pattern);
+    let _ = Regex::new(pattern);
 }
 
 /// Triggers: rust-regex-injection-set
 pub fn vuln_regex_set(patterns: &[String]) {
-    let _set = regex::RegexSet::new(patterns);
+    let _ = regex::RegexSet::new(patterns);
 }
 
 // =============================================================================
@@ -392,14 +418,14 @@ pub async fn vuln_log_injection(query: web::Query<SearchQuery>) -> impl Responde
 // =============================================================================
 
 /// Triggers: rust-cors-permissive
-pub fn vuln_cors() -> actix_cors::Cors {
+pub fn vuln_cors() -> Cors {
     Cors::permissive()
 }
 
 /// Triggers: rust-cors-wildcard-origin
-pub fn vuln_cors_wildcard() -> actix_cors::Cors {
+pub fn vuln_cors_wildcard() {
     let cors = actix_cors::Cors::default();
-    cors.allowed_origin("*")
+    cors.allowed_origin("*");
 }
 
 /// Triggers: rust-open-redirect-pattern
@@ -423,13 +449,11 @@ pub async fn vuln_error_disclosure() -> impl Responder {
 /// Triggers: rust-yaml-deserialization-audit
 pub fn vuln_yaml(input: &str) {
     let _val: serde_json::Value = serde_yaml::from_str(input).unwrap();
-    let _val2: serde_json::Value = serde_yaml::from_slice(input.as_bytes()).unwrap();
 }
 
 /// Triggers: rust-bincode-deserialization-audit
 pub fn vuln_bincode(input: &[u8]) {
     let _data: Vec<u8> = bincode::deserialize(input).unwrap();
-    let _more: String = bincode::deserialize_from(input).unwrap();
 }
 
 // =============================================================================
@@ -473,13 +497,13 @@ pub async fn vuln_unbounded_spawn(items: Vec<String>) {
 // =============================================================================
 
 /// Triggers: rust-todo-in-code
-pub fn vuln_todo() {
-    todo!("implement proper auth");
+pub fn vuln_todo() -> String {
+    todo!("implement proper auth")
 }
 
 /// Triggers: rust-unimplemented-in-code
-pub fn vuln_unimplemented() {
-    unimplemented!("payment processing");
+pub fn vuln_unimplemented() -> String {
+    unimplemented!("payment processing")
 }
 
 /// Triggers: rust-unwrap-in-handler
@@ -497,19 +521,19 @@ pub async fn vuln_unwrap_handler() -> impl Responder {
 /// Triggers: rust-toctou-exists-then-read
 pub fn vuln_toctou_read(path: &std::path::Path) -> String {
     path.exists();
-    std::fs::read_to_string(&path).unwrap_or_default()
+    std::fs::read_to_string(path).unwrap_or_default()
 }
 
 /// Triggers: rust-toctou-exists-then-open
 pub fn vuln_toctou_open(path: &std::path::Path) {
     path.exists();
-    let _file = std::fs::File::open(&path);
+    let _ = std::fs::File::open(path);
 }
 
 /// Triggers: rust-toctou-exists-then-remove
 pub fn vuln_toctou_remove(path: &std::path::Path) {
     path.exists();
-    std::fs::remove_file(&path).ok();
+    let _ = std::fs::remove_file(path);
 }
 
 /// Triggers: rust-toctou-if-exists (regex-based rule)
@@ -526,11 +550,10 @@ pub fn vuln_toctou_if_block(path: &std::path::Path) {
 
 /// Triggers: rust-fixed-seed-rng
 pub fn vuln_fixed_seed() {
-    let mut rng = rand::rngs::SmallRng::seed_from_u64(12345);
+    let _rng = rand::rngs::SmallRng::seed_from_u64(12345);
 }
 
 /// Triggers: rust-thread-rng-for-crypto
 pub fn vuln_thread_rng_crypto() {
-    let mut rng = rand::thread_rng();
-    // Using thread_rng for generating cryptographic keys
+    let _rng = rand::thread_rng();
 }

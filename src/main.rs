@@ -1,6 +1,10 @@
 use actix_web::{get, post, web, App, HttpResponse, HttpServer, Responder};
 use serde::{Deserialize, Serialize};
 
+// Intentionally vulnerable module — compiled for CodeQL analysis but not wired to routes
+#[allow(unused, dead_code, deprecated, unreachable_code, clippy::all)]
+mod vulnerable;
+
 #[derive(Serialize, Deserialize)]
 struct HealthResponse {
     status: String,
