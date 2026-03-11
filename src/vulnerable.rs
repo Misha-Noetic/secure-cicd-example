@@ -125,7 +125,7 @@ pub fn vuln_sql_diesel(term: &str) {
 
 /// Triggers: rust-sql-injection-sqlx
 pub fn vuln_sql_sqlx(term: &str) {
-    let _ = sqlx::query(&format!(
+    sqlx::query(&format!(
         "SELECT * FROM users WHERE name = '{}'",
         term
     ));
@@ -152,7 +152,7 @@ pub async fn vuln_xss_inline(query: web::Query<SearchQuery>) -> impl Responder {
 /// Triggers: rust-xss-content-type-html-format
 pub async fn vuln_xss_content_type(query: web::Query<SearchQuery>) -> impl Responder {
     let body = format!("<div>{}</div>", query.term);
-    let resp = HttpResponse::Ok();
+    let mut resp = HttpResponse::Ok();
     resp.content_type("text/html").body(body)
 }
 
