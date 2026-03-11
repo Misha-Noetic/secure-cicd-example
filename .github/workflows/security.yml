@@ -203,7 +203,7 @@ jobs:
           output: sbom.spdx.json
 
       - name: Upload SBOM as build artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         if: always() && hashFiles('sbom.spdx.json') != ''
         with:
           name: sbom-${{ github.sha }}
@@ -235,7 +235,7 @@ jobs:
         env:
           SLACK_WEBHOOK: ${{ secrets.SLACK_SECURITY_WEBHOOK_URL }}
         with:
-          webhook: ${{ secrets.SLACK_SECURITY_WEBHOOK_URL }}
+          webhook: https://hooks.slack.com/services/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
           webhook-type: incoming-webhook
           payload: |
             {
