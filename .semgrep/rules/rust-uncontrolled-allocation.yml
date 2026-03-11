@@ -14,7 +14,7 @@ rules:
       cwe:
         - "CWE-789: Memory Allocation with Excessive Size Value"
       owasp:
-        - "A06:2021 - Vulnerable and Outdated Components"
+        - "A04:2021 - Insecure Design"
       technology:
         - rust
       likelihood: MEDIUM
@@ -45,7 +45,7 @@ rules:
       cwe:
         - "CWE-789: Memory Allocation with Excessive Size Value"
       owasp:
-        - "A06:2021 - Vulnerable and Outdated Components"
+        - "A04:2021 - Insecure Design"
       technology:
         - rust
       likelihood: MEDIUM
@@ -75,7 +75,7 @@ rules:
       cwe:
         - "CWE-789: Memory Allocation with Excessive Size Value"
       owasp:
-        - "A06:2021 - Vulnerable and Outdated Components"
+        - "A04:2021 - Insecure Design"
       technology:
         - rust
       likelihood: MEDIUM

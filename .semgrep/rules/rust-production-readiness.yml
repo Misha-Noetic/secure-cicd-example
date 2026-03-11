@@ -68,7 +68,16 @@ rules:
         - https://owasp.org/www-community/vulnerabilities/Poor_Error_Handling
     patterns:
       - pattern: $EXPR.unwrap()
-      - pattern-inside: |
-          pub async fn $FN(...) -> impl Responder {
-            ...
-          }
+      - pattern-either:
+          - pattern-inside: |
+              pub async fn $FN(...) -> impl Responder {
+                ...
+              }
+          - pattern-inside: |
+              pub async fn $FN(...) -> HttpResponse {
+                ...
+              }
+          - pattern-inside: |
+              pub async fn $FN(...) -> Result<HttpResponse, $ERR> {
+                ...
+              }

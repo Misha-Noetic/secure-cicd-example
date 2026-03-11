@@ -112,3 +112,6 @@ rules:
       - metavariable-regex:
           metavariable: $SECRET
           regex: "(?i).*(secret|token|key|password|api_key|auth|hash|hmac|digest).*"
+      # Exclude safe comparisons against string literals
+      - pattern-not: $SECRET == "..."
+      - pattern-not: "..." == $SECRET
