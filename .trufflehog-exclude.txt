@@ -8,3 +8,8 @@ src/config\.rs
 # Intentionally vulnerable test file for Semgrep rule validation
 # Contains hardcoded secret patterns that trigger Semgrep rules
 src/vulnerable\.rs
+
+# Workflow files only reference secrets via ${{ secrets.* }}, never
+# contain actual secret values. TruffleHog false-positives on patterns
+# like "webhook:" and "SLACK_WEBHOOK" in the Slack notification job.
+\.github/workflows/
