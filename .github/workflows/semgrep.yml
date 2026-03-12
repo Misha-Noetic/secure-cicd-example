@@ -22,7 +22,7 @@ jobs:
     name: Semgrep Scan
     runs-on: ubuntu-latest
     container:
-      image: semgrep/semgrep
+      image: semgrep/semgrep@sha256:9fb6f44dc162b1e0aada85f072a95141844c61e3bfcedf40b8a46fecf208e986  # latest
 
     # Skip Dependabot PRs (avoids permission issues)
     if: github.actor != 'dependabot[bot]'
@@ -44,12 +44,11 @@ jobs:
         env:
           SEMGREP_APP_TOKEN: ${{ secrets.SEMGREP_APP_TOKEN }}
 
-      # ── Step 2: Custom local rules (blocking) ──
+      # ── Step 2: Custom local rules ──
       # Runs repo-specific Rust security rules from .semgrep/rules/.
-      # Outputs SARIF for the GitHub Security tab. Also blocks on findings.
-      # Runs even if step 1 fails.
-      # Exit 0 = no findings, exit 1 = findings (expected for vulnerable.rs),
-      # exit >1 = crash/config error. Tolerate 0 and 1; fail on crashes.
+      # Outputs SARIF for the GitHub Security tab. Runs even if step 1 fails.
+      # Findings from vulnerable.rs are expected (exit 1); only Semgrep
+      # crashes or config errors (exit >1) fail the step.
       - name: Run Semgrep (custom rules — SARIF for Security tab)
         if: always() && github.actor != 'dependabot[bot]'
         run: |

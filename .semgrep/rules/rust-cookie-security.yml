@@ -49,5 +49,5 @@ rules:
       references:
         - https://owasp.org/Top10/A05_2021-Security_Misconfiguration/
     patterns:
-      - pattern-regex: 'Cookie::build\([^;]*\.finish\(\)'
+      - pattern-regex: 'Cookie::build\([^;]*(?:\.finish|\.build)\(\)'
       - pattern-not-regex: '\.secure\(true\)'
