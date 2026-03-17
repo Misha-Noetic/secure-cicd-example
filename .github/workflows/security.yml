@@ -200,21 +200,40 @@ jobs:
           wait-for-processing: true
 
       # Generate SBOM — full inventory of everything in the image
-      - name: Generate SBOM (SPDX format)
+      # CycloneDX format for Dependency-Track compatibility
+      - name: Generate SBOM (CycloneDX format)
         uses: aquasecurity/trivy-action@57a97c7e7821a5776cebc9bb87c984fa69cba8f1  # 0.35.0
         if: always()
         with:
           image-ref: secure-api:${{ github.sha }}
-          format: spdx-json
-          output: sbom.spdx.json
+          format: cyclonedx
+          output: sbom.cdx.json
 
       - name: Upload SBOM as build artifact
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02  # v4
-        if: always() && hashFiles('sbom.spdx.json') != ''
+        if: always() && hashFiles('sbom.cdx.json') != ''
         with:
           name: sbom-${{ github.sha }}
-          path: sbom.spdx.json
+          path: sbom.cdx.json
           retention-days: 90
+
+      # Upload SBOM to Dependency-Track for continuous monitoring
+      # Requires DEPENDENCY_TRACK_URL and DEPENDENCY_TRACK_API_KEY secrets
+      - name: Upload SBOM to Dependency-Track
+        if: always() && hashFiles('sbom.cdx.json') != '' && env.DT_API_KEY != ''
+        env:
+          DT_API_KEY: ${{ secrets.DEPENDENCY_TRACK_API_KEY }}
+          DT_URL: ${{ secrets.DEPENDENCY_TRACK_URL }}
+        run: |
+          BOM_BASE64=$(base64 -w0 sbom.cdx.json)
+          cat > /tmp/dt-payload.json << EOF
+          {"projectName":"${{ github.event.repository.name }}","projectVersion":"${{ github.sha }}","autoCreate":true,"bom":"${BOM_BASE64}"}
+          EOF
+          curl -sf -X PUT "${DT_URL}/api/v1/bom" \
+            -H "X-Api-Key: ${DT_API_KEY}" \
+            -H "Content-Type: application/json" \
+            -d @/tmp/dt-payload.json
+          echo "SBOM uploaded to Dependency-Track"
 
   # ─────────────────────────────────────────────
   # Job 4: Notify — Slack alert on security failures
